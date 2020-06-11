@@ -1,12 +1,9 @@
 <div {!! $attributes !!}>
-    <ul class="nav nav-tabs nav-tabs">
+
+    <ul class="{{$navType}}">
 
         @foreach($tabs as $id => $tab)
-            @if($tab['type'] == \Encore\Admin\Widgets\Tab::TYPE_CONTENT)
-                <li {{ $id == $active ? 'class=active' : '' }}><a href="#tab_{{ $tab['id'] }}" data-toggle="tab">{{ $tab['title'] }}</a></li>
-            @elseif($tab['type'] == \Encore\Admin\Widgets\Tab::TYPE_LINK)
-                <li {{ $id == $active ? 'class=active' : '' }}><a href="{{ $tab['href'] }}">{{ $tab['title'] }}</a></li>
-            @endif
+        <li {{ $id == $active ? 'class=active' : '' }}><a href="#tab_{{ $tab['id'] }}" data-toggle="tab" index="tab_{{$id}}">{{ $tab['title'] }}</a></li>
         @endforeach
 
         @if (!empty($dropDown))
@@ -23,15 +20,10 @@
         @endif
         <li class="pull-right header">{{ $title }}</li>
     </ul>
-    <div class="tab-content">
+    <div class="tab-content {{$align}}">
         @foreach($tabs as $id => $tab)
         <div class="tab-pane {{ $id == $active ? 'active' : '' }}" id="tab_{{ $tab['id'] }}">
-            @php($content = \Illuminate\Support\Arr::get($tab, 'content'))
-                @if($content instanceof \Illuminate\Contracts\Support\Renderable)
-                    {!! $content->render() !!}
-                @else
-                    {!! $content !!}
-                @endif
+            {!! $tab['content'] !!}
         </div>
         @endforeach
 

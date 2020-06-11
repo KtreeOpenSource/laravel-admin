@@ -123,7 +123,7 @@ class Tab extends Widget implements Renderable
      */
     public function setActiveTab()
     {
-        $script = <<<SCRIPT
+      $script = <<<SCRIPT
             $(function() {
                          $('a[data-toggle="tab"]').on('show.bs.tab', function(e) {
                               localStorage.setItem('activeTab', $(e.target).attr('index'));

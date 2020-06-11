@@ -3,7 +3,6 @@
 namespace Encore\Admin\Form\Field;
 
 use Encore\Admin\Form\Field;
-use Illuminate\Support\Arr;
 
 class Html extends Field
 {
@@ -19,9 +18,6 @@ class Html extends Field
      */
     protected $label = '';
 
-    /**
-     * @var bool
-     */
     protected $plain = false;
 
     /**
@@ -34,12 +30,9 @@ class Html extends Field
     {
         $this->html = $html;
 
-        $this->label = Arr::get($arguments, 0);
+        $this->label = array_get($arguments, 0);
     }
 
-    /**
-     * @return $this
-     */
     public function plain()
     {
         $this->plain = true;
@@ -62,12 +55,10 @@ class Html extends Field
             return $this->html;
         }
 
-        $viewClass = $this->getViewElementClasses();
-
         return <<<EOT
-<div class="{$viewClass['form-group']}">
-    <label  class="{$viewClass['label']} control-label">{$this->label}</label>
-    <div class="{$viewClass['field']}">
+<div class="form-group">
+    <label  class="col-sm-{$this->width['label']} control-label">{$this->label}</label>
+    <div class="col-sm-{$this->width['field']}">
         {$this->html}
     </div>
 </div>

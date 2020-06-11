@@ -2,8 +2,6 @@
 
 namespace Encore\Admin\Grid\Filter;
 
-use Illuminate\Support\Arr;
-
 class Where extends AbstractFilter
 {
     /**
@@ -16,7 +14,7 @@ class Where extends AbstractFilter
     /**
      * Input value from presenter.
      *
-     * @var mixed
+     * @var
      */
     public $input;
 
@@ -62,9 +60,13 @@ class Where extends AbstractFilter
      */
     public function condition($inputs)
     {
-        $value = Arr::get($inputs, $this->column ?: static::getQueryHash($this->where, $this->label));
+        $value = array_get($inputs, $this->column ?: static::getQueryHash($this->where, $this->label));
 
-        if (is_null($value)) {
+        if (is_array($value)) {
+            $value = array_filter($value);
+        }
+
+        if (is_null($value) || empty($value)) {
             return;
         }
 

@@ -2,12 +2,12 @@
 
 namespace Encore\Admin\Auth\Database;
 
-use Encore\Admin\Traits\DefaultDatetimeFormat;
+use Encore\Admin\Traits\AdminBuilder;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Passport\HasApiTokens;
 
 /**
  * Class Administrator.
@@ -16,11 +16,37 @@ use Illuminate\Support\Facades\Storage;
  */
 class Administrator extends Model implements AuthenticatableContract
 {
-    use Authenticatable;
-    use HasPermissions;
-    use DefaultDatetimeFormat;
+    use HasApiTokens, Authenticatable, AdminBuilder, HasPermissions, SoftDeletes;
 
-    protected $fillable = ['username', 'password', 'name', 'avatar'];
+    const CURRENCY_CODE = 'MXN';
+    const LANGUAGE_ID = 'en';
+    const CREATED_AT = 'createdAt';
+    const UPDATED_AT = 'updatedAt';
+    const STATUS_ACTIVE = '1';
+    const STATUS_INACTIVE = '2';
+    const STATUS_ACTIVE_LABEL = 'Active';
+    const STATUS_INACTIVE_LABEL = 'Inactive';
+    const DELETED_AT = 'deleted';
+
+    protected $dates = ['deleted'];
+
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = ['userName', 'password', 'firstName', 'avatar','lastName',
+      'email','phoneNumber','address','country','currencyCode','languageId','statusId'];
+
+    /**
+     * Set the default currencyCode, languageId attributes
+     * @param [array] $attributes [description]
+     */
+    protected $attributes = [
+      'currencyCode' => self::CURRENCY_CODE,
+      'languageId' => self::LANGUAGE_ID
+    ];
 
     /**
      * Create a new Eloquent model instance.
@@ -39,54 +65,34 @@ class Administrator extends Model implements AuthenticatableContract
     }
 
     /**
-     * Get avatar attribute.
-     *
-     * @param string $avatar
-     *
-     * @return string
+     * To get CurrencyCode Attribute
+     * @param  [type] $value [description]
+     * @return [string]        [currency code]
      */
-    public function getAvatarAttribute($avatar)
+    public function getCurrencyCodeAttribute($value)
     {
-        if (url()->isValidUrl($avatar)) {
-            return $avatar;
-        }
-
-        $disk = config('admin.upload.disk');
-
-        if ($avatar && array_key_exists($disk, config('filesystems.disks'))) {
-            return Storage::disk(config('admin.upload.disk'))->url($avatar);
-        }
-
-        $default = config('admin.default_avatar') ?: '/vendor/laravel-admin/AdminLTE/dist/img/user2-160x160.jpg';
-
-        return admin_asset($default);
+        return self::CURRENCY_CODE;
     }
 
     /**
-     * A user has and belongs to many roles.
-     *
-     * @return BelongsToMany
+     * To get LanguageId Attribute
+     * @param  [type] $value [description]
+     * @return [string]        [language id]
      */
-    public function roles(): BelongsToMany
+    public function getLanguageIdAttribute($value)
     {
-        $pivotTable = config('admin.database.role_users_table');
-
-        $relatedModel = config('admin.database.roles_model');
-
-        return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'role_id');
+        return self::LANGUAGE_ID;
     }
 
     /**
-     * A User has and belongs to many permissions.
-     *
-     * @return BelongsToMany
+     * To get Status array
+     * @return [array] [status array]
      */
-    public function permissions(): BelongsToMany
+    public static function getStatus()
     {
-        $pivotTable = config('admin.database.user_permissions_table');
-
-        $relatedModel = config('admin.database.permissions_model');
-
-        return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'permission_id');
+        return[
+          self::STATUS_ACTIVE => self::STATUS_ACTIVE_LABEL,
+          self::STATUS_INACTIVE => self::STATUS_INACTIVE_LABEL,
+        ];
     }
 }

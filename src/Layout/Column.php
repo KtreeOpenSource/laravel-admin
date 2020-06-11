@@ -2,17 +2,14 @@
 
 namespace Encore\Admin\Layout;
 
-use Encore\Admin\Grid;
 use Illuminate\Contracts\Support\Renderable;
 
 class Column implements Buildable
 {
     /**
-     * grid system prefix width.
-     *
-     * @var array
+     * @var int
      */
-    protected $width = [];
+    protected $width = 12;
 
     /**
      * @var array
@@ -33,17 +30,7 @@ class Column implements Buildable
             $this->append($content);
         }
 
-        ///// set width.
-        // if null, or $this->width is empty array, set as "md" => "12"
-        if (is_null($width) || (is_array($width) && count($width) === 0)) {
-            $this->width['md'] = 12;
-        }
-        // $this->width is number(old version), set as "md" => $width
-        elseif (is_numeric($width)) {
-            $this->width['md'] = $width;
-        } else {
-            $this->width = $width;
-        }
+        $this->width = $width;
     }
 
     /**
@@ -96,7 +83,7 @@ class Column implements Buildable
         $this->startColumn();
 
         foreach ($this->contents as $content) {
-            if ($content instanceof Renderable || $content instanceof Grid) {
+            if ($content instanceof Renderable) {
                 echo $content->render();
             } else {
                 echo (string) $content;
@@ -111,12 +98,7 @@ class Column implements Buildable
      */
     protected function startColumn()
     {
-        // get class name using width array
-        $classnName = collect($this->width)->map(function ($value, $key) {
-            return "col-$key-$value";
-        })->implode(' ');
-
-        echo "<div class=\"{$classnName}\">";
+        echo "<div class=\"col-md-{$this->width}\">";
     }
 
     /**

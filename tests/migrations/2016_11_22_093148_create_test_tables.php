@@ -42,20 +42,19 @@ class CreateTestTables extends Migration
 
         Schema::create('test_users', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('username');
+            $table->string('userName');
             $table->string('email');
             $table->string('mobile')->nullable();
             $table->string('avatar')->nullable();
             $table->string('password');
-            $table->json('data')->nullable();
             $table->timestamps();
         });
 
         Schema::create('test_user_profiles', function (Blueprint $table) {
             $table->increments('id');
             $table->string('user_id');
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
+            $table->string('firstName')->nullable();
+            $table->string('lastName')->nullable();
             $table->string('postcode')->nullable();
             $table->string('address')->nullable();
             $table->string('latitude')->nullable();

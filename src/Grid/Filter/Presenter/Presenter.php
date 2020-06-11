@@ -26,7 +26,7 @@ abstract class Presenter
      *
      * @return string
      */
-    public function view(): string
+    public function view() : string
     {
         $reflect = new \ReflectionClass(get_called_class());
 
@@ -34,25 +34,11 @@ abstract class Presenter
     }
 
     /**
-     * Set default value for filter.
-     *
-     * @param $default
-     *
-     * @return $this
-     */
-    public function default($default)
-    {
-        $this->filter->default($default);
-
-        return $this;
-    }
-
-    /**
      * Blade template variables for this presenter.
      *
      * @return array
      */
-    public function variables(): array
+    public function variables() : array
     {
         return [];
     }

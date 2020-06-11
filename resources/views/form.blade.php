@@ -29,7 +29,7 @@
                 @else
                     <div class="col-md-12">
                       <?php
-                        foreach ($form->fields() as $field) {
+                        foreach($form->fields() as $field){
                             echo $field->render();
                         }
                       ?>

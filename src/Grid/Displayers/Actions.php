@@ -17,11 +17,24 @@ class Actions extends AbstractDisplayer
     protected $prepends = [];
 
     /**
-     * Default actions.
-     *
-     * @var array
+     * @var bool
      */
-    protected $actions = ['view', 'edit', 'delete'];
+    protected $allowEdit = true;
+
+    /**
+     * @var bool
+     */
+    protected $allowView = false;
+
+    /**
+     * @var bool
+     */
+    protected $allowDelete = true;
+
+    /**
+     * @var bool
+     */
+    protected $allowcustomDelete = false;
 
     /**
      * @var string
@@ -29,11 +42,16 @@ class Actions extends AbstractDisplayer
     protected $resource;
 
     /**
-     * Disable all actions.
-     *
-     * @var bool
+     * @var string
      */
-    protected $disableAll = false;
+    protected $deletecustomUrl;
+
+    /**
+     * @var
+     */
+    protected $key;
+
+    protected $editUrl;
 
     /**
      * Append a action.
@@ -42,6 +60,7 @@ class Actions extends AbstractDisplayer
      *
      * @return $this
      */
+
     public function append($action)
     {
         array_push($this->appends, $action);
@@ -64,73 +83,44 @@ class Actions extends AbstractDisplayer
     }
 
     /**
-     * Get route key name of current row.
-     *
-     * @return mixed
-     */
-    public function getRouteKey()
-    {
-        return $this->row->{$this->row->getRouteKeyName()};
-    }
-
-    /**
-     * Disable view action.
-     *
-     * @return $this
-     */
-    public function disableView(bool $disable = true)
-    {
-        if ($disable) {
-            array_delete($this->actions, 'view');
-        } elseif (!in_array('view', $this->actions)) {
-            array_push($this->actions, 'view');
-        }
-
-        return $this;
-    }
-
-    /**
      * Disable delete.
      *
-     * @return $this.
+     * @return void.
      */
-    public function disableDelete(bool $disable = true)
+    public function disableDelete()
     {
-        if ($disable) {
-            array_delete($this->actions, 'delete');
-        } elseif (!in_array('delete', $this->actions)) {
-            array_push($this->actions, 'delete');
-        }
+        $this->allowDelete = false;
+    }
 
-        return $this;
+    /**
+     * Enable custome delete.
+     *
+     * @return void.
+     */
+    public function enablecustomDelete($param)
+    {
+      $this->deletecustomUrl = $param;
+        $this->allowcustomDelete = true;
     }
 
     /**
      * Disable edit.
      *
-     * @return $this.
+     * @return void.
      */
-    public function disableEdit(bool $disable = true)
+    public function disableEdit()
     {
-        if ($disable) {
-            array_delete($this->actions, 'edit');
-        } elseif (!in_array('edit', $this->actions)) {
-            array_push($this->actions, 'edit');
-        }
-
-        return $this;
+        $this->allowEdit = false;
     }
 
     /**
-     * Disable all actions.
+     * Enable  view.
      *
-     * @return $this
+     * @return void.
      */
-    public function disableAll()
+    public function enableView()
     {
-        $this->disableAll = true;
-
-        return $this;
+        $this->allowView = true;
     }
 
     /**
@@ -138,13 +128,11 @@ class Actions extends AbstractDisplayer
      *
      * @param $resource
      *
-     * @return $this
+     * @return void
      */
     public function setResource($resource)
     {
         $this->resource = $resource;
-
-        return $this;
     }
 
     /**
@@ -162,19 +150,27 @@ class Actions extends AbstractDisplayer
      */
     public function display($callback = null)
     {
+
+
         if ($callback instanceof \Closure) {
             $callback->call($this, $this);
         }
 
-        if ($this->disableAll) {
-            return '';
+        $actions = $this->prepends;
+        if ($this->allowEdit) {
+            array_push($actions, $this->editAction());
         }
 
-        $actions = $this->prepends;
+        if ($this->allowView) {
+            array_push($actions, $this->viewAction());
+        }
 
-        foreach ($this->actions as $action) {
-            $method = 'render'.ucfirst($action);
-            array_push($actions, $this->{$method}());
+        if ($this->allowcustomDelete) {
+            array_push($actions, $this->customdeleteAction());
+        }
+
+        if ($this->allowDelete) {
+            array_push($actions, $this->deleteAction());
         }
 
         $actions = array_merge($actions, $this->appends);
@@ -182,103 +178,179 @@ class Actions extends AbstractDisplayer
         return implode('', $actions);
     }
 
+    public function setKey($key)
+    {
+        $this->key = $key;
+
+        return $this;
+    }
+
+    public function getKey()
+    {
+        if ($this->key) {
+            return $this->key;
+        }
+
+        return parent::getKey();
+    }
+
+    public function url($url = null)
+    {
+          $this->editUrl = $url;
+        return $this->editUrl;
+    }
     /**
-     * Render view action.
+     * Built edit action.
      *
      * @return string
      */
-    protected function renderView()
+    protected function editAction()
+    {
+        if ($this->editUrl == null)
+        {
+            $this->editUrl = $this->getResource().'/'.$this->getKey().'/edit';
+        }
+
+        return <<<EOT
+<a href="{$this->editUrl}">
+    <i class="fa fa-pencil"></i>
+</a>
+EOT;
+    }
+
+    /**
+     * Built view action.
+     *
+     * @return string
+     */
+    protected function viewAction()
     {
         return <<<EOT
-<a href="{$this->getResource()}/{$this->getRouteKey()}" class="{$this->grid->getGridRowName()}-view">
+<a href="{$this->getResource()}/{$this->getKey()}/view">
     <i class="fa fa-eye"></i>
 </a>
 EOT;
     }
 
+
+
     /**
-     * Render edit action.
+     * Built delete action.
      *
      * @return string
      */
-    protected function renderEdit()
+    protected function deleteAction()
     {
-        return <<<EOT
-<a href="{$this->getResource()}/{$this->getRouteKey()}/edit" class="{$this->grid->getGridRowName()}-edit">
-    <i class="fa fa-edit"></i>
-</a>
-EOT;
-    }
-
-    /**
-     * Render delete action.
-     *
-     * @return string
-     */
-    protected function renderDelete()
-    {
-        $this->setupDeleteScript();
-
-        return <<<EOT
-<a href="javascript:void(0);" data-id="{$this->getKey()}" class="{$this->grid->getGridRowName()}-delete">
-    <i class="fa fa-trash"></i>
-</a>
-EOT;
-    }
-
-    protected function setupDeleteScript()
-    {
-        $trans = [
-            'delete_confirm' => trans('admin.delete_confirm'),
-            'confirm'        => trans('admin.confirm'),
-            'cancel'         => trans('admin.cancel'),
-        ];
+        $deleteConfirm = trans('admin.delete_confirm');
+        $confirm = trans('admin.confirm');
+        $cancel = trans('admin.cancel');
 
         $script = <<<SCRIPT
 
-$('.{$this->grid->getGridRowName()}-delete').unbind('click').click(function() {
+$('.grid-row-delete').unbind('click').click(function() {
 
     var id = $(this).data('id');
 
     swal({
-        title: "{$trans['delete_confirm']}",
-        type: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#DD6B55",
-        confirmButtonText: "{$trans['confirm']}",
-        showLoaderOnConfirm: true,
-        cancelButtonText: "{$trans['cancel']}",
-        preConfirm: function() {
-            return new Promise(function(resolve) {
-                $.ajax({
-                    method: 'post',
-                    url: '{$this->getResource()}/' + id,
-                    data: {
-                        _method:'delete',
-                        _token:LA.token,
-                    },
-                    success: function (data) {
-                        $.pjax.reload('#pjax-container');
+      title: "$deleteConfirm",
+      type: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DD6B55",
+      confirmButtonText: "$confirm",
+      closeOnConfirm: false,
+      cancelButtonText: "$cancel"
+    },
+    function(){
+        $.ajax({
+            method: 'post',
+            url: '{$this->getResource()}/' + id,
+            data: {
+                _method:'delete',
+                _token:LA.token,
+            },
+            success: function (data) {
+                $.pjax.reload('#pjax-container');
 
-                        resolve(data);
+                if (typeof data === 'object') {
+                    if (data.status) {
+                        swal(data.message, '', 'success');
+                    } else {
+                        swal(data.message, '', 'error');
                     }
-                });
-            });
-        }
-    }).then(function(result) {
-        var data = result.value;
-        if (typeof data === 'object') {
-            if (data.status) {
-                swal(data.message, '', 'success');
-            } else {
-                swal(data.message, '', 'error');
+                }
             }
-        }
+        });
     });
 });
 
 SCRIPT;
 
         Admin::script($script);
+
+        return <<<EOT
+<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete">
+    <i class="fa fa-trash"></i>
+</a>
+EOT;
+    }
+
+    /**
+     * Built custom delete action.
+     *
+     * @return string
+     */
+    protected function customdeleteAction()
+    {
+        $deleteConfirm = trans('admin.delete_confirm');
+        $confirm = trans('admin.confirm');
+        $cancel = trans('admin.cancel');
+
+        $script = <<<SCRIPT
+
+$('.grid-row-delete').unbind('click').click(function() {
+
+    var id = $(this).data('id');
+
+    swal({
+      title: "$deleteConfirm",
+      type: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DD6B55",
+      confirmButtonText: "$confirm",
+      closeOnConfirm: false,
+      cancelButtonText: "$cancel"
+    },
+    function(){
+        $.ajax({
+            method: 'post',
+            url: '$this->deletecustomUrl/' + id,
+            data: {
+                _method:'delete',
+                _token:LA.token,
+            },
+            success: function (data) {
+                $.pjax.reload('#pjax-container');
+
+                if (typeof data === 'object') {
+                    if (data.status) {
+                        swal(data.message, '', 'success');
+                    } else {
+                        swal(data.message, '', 'error');
+                    }
+                }
+            }
+        });
+    });
+});
+
+SCRIPT;
+
+        Admin::script($script);
+
+        return <<<EOT
+<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete">
+    <i class="fa fa-trash"></i>
+</a>
+EOT;
     }
 }

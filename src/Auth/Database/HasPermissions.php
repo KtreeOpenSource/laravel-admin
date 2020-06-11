@@ -2,43 +2,85 @@
 
 namespace Encore\Admin\Auth\Database;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 trait HasPermissions
 {
+    /**
+     * Get avatar attribute.
+     *
+     * @param string $avatar
+     *
+     * @return string
+     */
+    public function getAvatarAttribute($avatar)
+    {
+        if ($avatar) {
+            return Storage::disk(config('admin.upload.disk'))->url($avatar);
+        }
+
+        return admin_asset('/vendor/laravel-admin/AdminLTE/dist/img/user2-160x160.jpg');
+    }
+
+    /**
+     * A user has and belongs to many roles.
+     *
+     * @return BelongsToMany
+     */
+    public function roles() : BelongsToMany
+    {
+        $pivotTable = config('admin.database.role_users_table');
+
+        $relatedModel = config('admin.database.roles_model');
+
+        return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'role_id');
+    }
+
+    /**
+     * A User has and belongs to many permissions.
+     *
+     * @return BelongsToMany
+     */
+    public function permissions() : BelongsToMany
+    {
+        $pivotTable = config('admin.database.user_permissions_table');
+
+        $relatedModel = config('admin.database.permissions_model');
+
+        return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'permission_id');
+    }
+
     /**
      * Get all permissions of user.
      *
      * @return mixed
      */
-    public function allPermissions(): Collection
+    public function allPermissions() : Collection
     {
+        $roles = $this->roles()->with('permissions')->get()->pluck('permissions')->flatten()->merge($this->permissions);
         return $this->roles()->with('permissions')->get()->pluck('permissions')->flatten()->merge($this->permissions);
     }
 
     /**
      * Check if user has permission.
      *
-     * @param $ability
-     * @param array $arguments
+     * @param $permission
      *
      * @return bool
      */
-    public function can($ability, $arguments = []): bool
+    public function can(string $permission) : bool
     {
-        if (empty($ability)) {
-            return true;
-        }
-
         if ($this->isAdministrator()) {
             return true;
         }
 
-        if ($this->permissions->pluck('slug')->contains($ability)) {
+        if ($this->permissions->pluck('slug')->contains($permission)) {
             return true;
         }
 
-        return $this->roles->pluck('permissions')->flatten()->pluck('slug')->contains($ability);
+        return $this->roles->pluck('permissions')->flatten()->pluck('slug')->contains($permission);
     }
 
     /**
@@ -48,7 +90,7 @@ trait HasPermissions
      *
      * @return bool
      */
-    public function cannot(string $permission): bool
+    public function cannot(string $permission) : bool
     {
         return !$this->can($permission);
     }
@@ -58,7 +100,7 @@ trait HasPermissions
      *
      * @return mixed
      */
-    public function isAdministrator(): bool
+    public function isAdministrator() : bool
     {
         return $this->isRole('administrator');
     }
@@ -70,7 +112,7 @@ trait HasPermissions
      *
      * @return mixed
      */
-    public function isRole(string $role): bool
+    public function isRole(string $role) : bool
     {
         return $this->roles->pluck('slug')->contains($role);
     }
@@ -82,7 +124,7 @@ trait HasPermissions
      *
      * @return mixed
      */
-    public function inRoles(array $roles = []): bool
+    public function inRoles(array $roles = []) : bool
     {
         return $this->roles->pluck('slug')->intersect($roles)->isNotEmpty();
     }
@@ -94,7 +136,7 @@ trait HasPermissions
      *
      * @return bool
      */
-    public function visible(array $roles = []): bool
+    public function visible(array $roles = []) : bool
     {
         if (empty($roles)) {
             return true;
@@ -103,19 +145,5 @@ trait HasPermissions
         $roles = array_column($roles, 'slug');
 
         return $this->inRoles($roles) || $this->isAdministrator();
-    }
-
-    /**
-     * Detach models from the relationship.
-     *
-     * @return void
-     */
-    protected static function bootHasPermissions()
-    {
-        static::deleting(function ($model) {
-            $model->roles()->detach();
-
-            $model->permissions()->detach();
-        });
     }
 }

@@ -8,7 +8,7 @@ use Encore\Admin\Form\Field;
 use Encore\Admin\Form\NestedForm;
 use Illuminate\Database\Eloquent\Relations\HasMany as Relation;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 /**
@@ -52,27 +52,9 @@ class HasMany extends Field
      * @var array
      */
     protected $views = [
-        'default' => 'admin::form.hasmany',
-        'tab'     => 'admin::form.hasmanytab',
-        'table'   => 'admin::form.hasmanytable',
+        'default'   => 'admin::form.hasmany',
+        'tab'       => 'admin::form.hasmanytab',
     ];
-
-    /**
-     * Options for template.
-     *
-     * @var array
-     */
-    protected $options = [
-        'allowCreate' => true,
-        'allowDelete' => true,
-    ];
-
-    /**
-     * Distinct fields.
-     *
-     * @var array
-     */
-    protected $distinctFields = [];
 
     /**
      * Create a new HasMany field instance.
@@ -101,7 +83,7 @@ class HasMany extends Field
      *
      * @param array $input
      *
-     * @return bool|\Illuminate\Contracts\Validation\Validator
+     * @return bool|Validator
      */
     public function getValidator(array $input)
     {
@@ -109,14 +91,7 @@ class HasMany extends Field
             return false;
         }
 
-        $input = Arr::only($input, $this->column);
-
-        /** unset item that contains remove flag */
-        foreach ($input[$this->column] as $key => $value) {
-            if ($value[NestedForm::REMOVE_FLAG_NAME]) {
-                unset($input[$this->column][$key]);
-            }
-        }
+        $input = array_only($input, $this->column);
 
         $form = $this->buildNestedForm($this->column, $this->builder);
 
@@ -146,60 +121,21 @@ class HasMany extends Field
             );
         }
 
-        Arr::forget($rules, NestedForm::REMOVE_FLAG_NAME);
+        array_forget($rules, NestedForm::REMOVE_FLAG_NAME);
 
         if (empty($rules)) {
             return false;
         }
 
         $newRules = [];
-        $newInput = [];
 
         foreach ($rules as $column => $rule) {
             foreach (array_keys($input[$this->column]) as $key) {
                 $newRules["{$this->column}.$key.$column"] = $rule;
-                if (isset($input[$this->column][$key][$column]) &&
-                    is_array($input[$this->column][$key][$column])) {
-                    foreach ($input[$this->column][$key][$column] as $vkey => $value) {
-                        $newInput["{$this->column}.$key.{$column}$vkey"] = $value;
-                    }
-                }
             }
         }
 
-        if (empty($newInput)) {
-            $newInput = $input;
-        }
-
-        $this->appendDistinctRules($newRules);
-
-        return \validator($newInput, $newRules, $this->getValidationMessages(), $attributes);
-    }
-
-    /**
-     * Set distinct fields.
-     *
-     * @param array $fields
-     *
-     * @return $this
-     */
-    public function distinctFields(array $fields)
-    {
-        $this->distinctFields = $fields;
-
-        return $this;
-    }
-
-    /**
-     * Append distinct rules.
-     *
-     * @param array $rules
-     */
-    protected function appendDistinctRules(array &$rules)
-    {
-        foreach ($this->distinctFields as $field) {
-            $rules["{$this->column}.*.$field"] = 'distinct';
-        }
+        return Validator::make($input, $newRules, $this->validationMessages, $attributes);
     }
 
     /**
@@ -221,7 +157,7 @@ class HasMany extends Field
             }
         }
 
-        foreach (array_keys(Arr::dot($input)) as $key) {
+        foreach (array_keys(array_dot($input)) as $key) {
             if (is_string($column)) {
                 if (Str::endsWith($key, ".$column")) {
                     $attributes[$key] = $label;
@@ -293,11 +229,11 @@ class HasMany extends Field
                 /*
                  * set new key
                  */
-                Arr::set($input, "{$this->column}.$index.$newKey", $value);
+                array_set($input, "{$this->column}.$index.$newKey", $value);
                 /*
                  * forget the old key and value
                  */
-                Arr::forget($input, "{$this->column}.$index.$name");
+                array_forget($input, "{$this->column}.$index.$name");
             }
         }
     }
@@ -321,13 +257,13 @@ class HasMany extends Field
      *
      * @param string   $column
      * @param \Closure $builder
-     * @param null     $model
+     * @param null     $key
      *
      * @return NestedForm
      */
-    protected function buildNestedForm($column, \Closure $builder, $model = null)
+    protected function buildNestedForm($column, \Closure $builder, $key = null)
     {
-        $form = new Form\NestedForm($column, $model);
+        $form = new Form\NestedForm($column, $key);
 
         $form->setForm($this->form);
 
@@ -381,16 +317,6 @@ class HasMany extends Field
     }
 
     /**
-     * Use table mode to showing hasmany field.
-     *
-     * @return HasMany
-     */
-    public function useTable()
-    {
-        return $this->mode('table');
-    }
-
-    /**
      * Build Nested form for related data.
      *
      * @throws \Exception
@@ -426,22 +352,14 @@ class HasMany extends Field
                     continue;
                 }
 
-                $model = $relation->getRelated()->replicate()->forceFill($data);
-
-                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model)
+                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $key)
                     ->fill($data);
             }
         } else {
-            if (empty($this->value)) {
-                return [];
-            }
-
             foreach ($this->value as $data) {
-                $key = Arr::get($data, $relation->getRelated()->getKeyName());
+                $key = array_get($data, $relation->getRelated()->getKeyName());
 
-                $model = $relation->getRelated()->replicate()->forceFill($data);
-
-                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model)
+                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $key)
                     ->fill($data);
             }
         }
@@ -484,7 +402,7 @@ class HasMany extends Field
          */
         $script = <<<EOT
 var index = 0;
-$('#has-many-{$this->column}').off('click', '.add').on('click', '.add', function () {
+$('#has-many-{$this->column}').on('click', '.add', function () {
 
     var tpl = $('template.{$this->column}-tpl');
 
@@ -493,14 +411,11 @@ $('#has-many-{$this->column}').off('click', '.add').on('click', '.add', function
     var template = tpl.html().replace(/{$defaultKey}/g, index);
     $('.has-many-{$this->column}-forms').append(template);
     {$templateScript}
-    return false;
 });
 
-$('#has-many-{$this->column}').off('click', '.remove').on('click', '.remove', function () {
-    $(this).closest('.has-many-{$this->column}-form').find('input').removeAttr('required');
+$('#has-many-{$this->column}').on('click', '.remove', function () {
     $(this).closest('.has-many-{$this->column}-form').hide();
     $(this).closest('.has-many-{$this->column}-form').find('.$removeClass').val(1);
-    return false;
 });
 
 EOT;
@@ -554,87 +469,13 @@ if ($('.has-error').length) {
         var tabId = '#'+$(this).attr('id');
         $('li a[href="'+tabId+'"] i').removeClass('hide');
     });
-
+    
     var first = $('.has-error:first').parent().attr('id');
     $('li a[href="#'+first+'"]').tab('show');
 }
 EOT;
 
         Admin::script($script);
-    }
-
-    /**
-     * Setup default template script.
-     *
-     * @param string $templateScript
-     *
-     * @return void
-     */
-    protected function setupScriptForTableView($templateScript)
-    {
-        $removeClass = NestedForm::REMOVE_FLAG_CLASS;
-        $defaultKey = NestedForm::DEFAULT_KEY_NAME;
-
-        /**
-         * When add a new sub form, replace all element key in new sub form.
-         *
-         * @example comments[new___key__][title]  => comments[new_{index}][title]
-         *
-         * {count} is increment number of current sub form count.
-         */
-        $script = <<<EOT
-var index = 0;
-$('#has-many-{$this->column}').on('click', '.add', function () {
-
-    var tpl = $('template.{$this->column}-tpl');
-
-    index++;
-
-    var template = tpl.html().replace(/{$defaultKey}/g, index);
-    $('.has-many-{$this->column}-forms').append(template);
-    {$templateScript}
-    return false;
-});
-
-$('#has-many-{$this->column}').on('click', '.remove', function () {
-    var first_input_name = $(this).closest('.has-many-{$this->column}-form').find('input[name]:first').attr('name');
-    if (first_input_name.match('{$this->column}\\\[new_')) {
-        $(this).closest('.has-many-{$this->column}-form').remove();
-    } else {
-        $(this).closest('.has-many-{$this->column}-form').hide();
-        $(this).closest('.has-many-{$this->column}-form').find('.$removeClass').val(1);
-        $(this).closest('.has-many-{$this->column}-form').find('input').removeAttr('required');
-    }
-    return false;
-});
-
-EOT;
-
-        Admin::script($script);
-    }
-
-    /**
-     * Disable create button.
-     *
-     * @return $this
-     */
-    public function disableCreate()
-    {
-        $this->options['allowCreate'] = false;
-
-        return $this;
-    }
-
-    /**
-     * Disable delete button.
-     *
-     * @return $this
-     */
-    public function disableDelete()
-    {
-        $this->options['allowDelete'] = false;
-
-        return $this;
     }
 
     /**
@@ -646,14 +487,6 @@ EOT;
      */
     public function render()
     {
-        if (!$this->shouldRender()) {
-            return '';
-        }
-
-        if ($this->viewMode == 'table') {
-            return $this->renderTable();
-        }
-
         // specify a view to render.
         $this->view = $this->views[$this->viewMode];
 
@@ -663,68 +496,9 @@ EOT;
         $this->setupScript($script);
 
         return parent::render()->with([
-            'forms'        => $this->buildRelatedForms(),
-            'template'     => $template,
-            'relationName' => $this->relationName,
-            'options'      => $this->options,
-        ]);
-    }
-
-    /**
-     * Render the `HasMany` field for table style.
-     *
-     * @throws \Exception
-     *
-     * @return mixed
-     */
-    protected function renderTable()
-    {
-        $headers = [];
-        $fields = [];
-        $hidden = [];
-        $scripts = [];
-
-        /* @var Field $field */
-        foreach ($this->buildNestedForm($this->column, $this->builder)->fields() as $field) {
-            if (is_a($field, Hidden::class)) {
-                $hidden[] = $field->render();
-            } else {
-                /* Hide label and set field width 100% */
-                $field->setLabelClass(['hidden']);
-                $field->setWidth(12, 0);
-                $fields[] = $field->render();
-                $headers[] = $field->label();
-            }
-
-            /*
-             * Get and remove the last script of Admin::$script stack.
-             */
-            if ($field->getScript()) {
-                $scripts[] = array_pop(Admin::$script);
-            }
-        }
-
-        /* Build row elements */
-        $template = array_reduce($fields, function ($all, $field) {
-            $all .= "<td>{$field}</td>";
-
-            return $all;
-        }, '');
-
-        /* Build cell with hidden elements */
-        $template .= '<td class="hidden">'.implode('', $hidden).'</td>';
-
-        $this->setupScript(implode("\r\n", $scripts));
-
-        // specify a view to render.
-        $this->view = $this->views[$this->viewMode];
-
-        return parent::render()->with([
-            'headers'      => $headers,
-            'forms'        => $this->buildRelatedForms(),
-            'template'     => $template,
-            'relationName' => $this->relationName,
-            'options'      => $this->options,
+            'forms'         => $this->buildRelatedForms(),
+            'template'      => $template,
+            'relationName'  => $this->relationName,
         ]);
     }
 }

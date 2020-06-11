@@ -3,7 +3,7 @@
     <label for="{{$id}}" class="{{$viewClass['label']}} control-label form-control-label">{{$label}}</label>
 
     @include('admin::form.error')
-
+    
     <div class="{{$viewClass['field']}}">
 
         @foreach($options as $option => $label)

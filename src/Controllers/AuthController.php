@@ -2,72 +2,58 @@
 
 namespace Encore\Admin\Controllers;
 
+use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Layout\Content;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
+use Aginev\LoginActivity\Handlers\EloquentHandler;
 
 class AuthController extends Controller
 {
     /**
-     * @var string
-     */
-    protected $loginView = 'admin::login';
-
-    /**
-     * Show the login page.
+     * Login page.
      *
      * @return \Illuminate\Contracts\View\Factory|Redirect|\Illuminate\View\View
      */
     public function getLogin()
     {
-        if ($this->guard()->check()) {
-            return redirect($this->redirectPath());
+        if (!Auth::guard('admin')->guest()) {
+            return redirect(config('admin.route.prefix'));
         }
 
-        return view($this->loginView);
+        return view('admin::login');
     }
 
     /**
-     * Handle a login request.
-     *
      * @param Request $request
      *
      * @return mixed
      */
     public function postLogin(Request $request)
     {
-        $this->loginValidator($request->all())->validate();
+        $credentials = $request->only(['userName', 'password']);
 
-        $credentials = $request->only([$this->username(), 'password']);
-        $remember = $request->get('remember', false);
+        $validator = Validator::make($credentials, [
+            'userName' => 'required', 'password' => 'required',
+        ]);
 
-        if ($this->guard()->attempt($credentials, $remember)) {
-            return $this->sendLoginResponse($request);
+        if ($validator->fails()) {
+            return Redirect::back()->withInput()->withErrors($validator);
         }
 
-        return back()->withInput()->withErrors([
-            $this->username() => $this->getFailedLoginMessage(),
-        ]);
-    }
+        if (Auth::guard('admin')->attempt($credentials)) {
+            admin_toastr(trans('admin.login_successful'));
 
-    /**
-     * Get a validator for an incoming login request.
-     *
-     * @param array $data
-     *
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    protected function loginValidator(array $data)
-    {
-        return Validator::make($data, [
-            $this->username()   => 'required',
-            'password'          => 'required',
-        ]);
+            return redirect()->intended(config('admin.route.prefix'));
+        }
+
+        return Redirect::back()->withInput()->withErrors(['userName' => $this->getFailedLoginMessage()]);
     }
 
     /**
@@ -75,36 +61,29 @@ class AuthController extends Controller
      *
      * @return Redirect
      */
-    public function getLogout(Request $request)
+    public function getLogout()
     {
-        $this->guard()->logout();
-
-        $request->session()->invalidate();
-
+        /** Store user logout activity  */
+        if (isset(Admin::user()->id) && config('login-activity.track_logout')) {
+            $logout_activity = new EloquentHandler;
+            $logout_activity->createActivity(Admin::user()->id, 'logout');
+        }
+        Auth::guard('admin')->logout();
+        session()->forget('url.intented');
         return redirect(config('admin.route.prefix'));
     }
 
     /**
      * User setting page.
      *
-     * @param Content $content
-     *
-     * @return Content
+     * @return mixed
      */
-    public function getSetting(Content $content)
+    public function getSetting()
     {
-        $form = $this->settingForm();
-        $form->tools(
-            function (Form\Tools $tools) {
-                $tools->disableList();
-                $tools->disableDelete();
-                $tools->disableView();
-            }
-        );
-
-        return $content
-            ->title(trans('admin.user_setting'))
-            ->body($form->edit(Admin::user()->id));
+        return Admin::content(function (Content $content) {
+            $content->header(trans('admin.user_setting'));
+            $content->body($this->settingForm()->edit(Admin::user()->id));
+        });
     }
 
     /**
@@ -124,36 +103,32 @@ class AuthController extends Controller
      */
     protected function settingForm()
     {
-        $class = config('admin.database.users_model');
+        return Administrator::form(function (Form $form) {
+            $form->display('userName', trans('admin.userName'));
+            $form->text('name', trans('admin.name'))->rules('required');
+            $form->image('avatar', trans('admin.avatar'));
+            $form->password('password', trans('admin.password'))->rules('confirmed|required');
+            $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+                ->default(function ($form) {
+                    return $form->model()->password;
+                });
 
-        $form = new Form(new $class());
+            $form->setAction(admin_base_path('auth/setting'));
 
-        $form->display('username', trans('admin.username'));
-        $form->text('name', trans('admin.name'))->rules('required');
-        $form->image('avatar', trans('admin.avatar'));
-        $form->password('password', trans('admin.password'))->rules('confirmed|required');
-        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-            ->default(function ($form) {
-                return $form->model()->password;
+            $form->ignore(['password_confirmation']);
+
+            $form->saving(function (Form $form) {
+                if ($form->password && $form->model()->password != $form->password) {
+                    $form->password = bcrypt($form->password);
+                }
             });
 
-        $form->setAction(admin_url('auth/setting'));
+            $form->saved(function () {
+                admin_toastr(trans('admin.update_succeeded'));
 
-        $form->ignore(['password_confirmation']);
-
-        $form->saving(function (Form $form) {
-            if ($form->password && $form->model()->password != $form->password) {
-                $form->password = bcrypt($form->password);
-            }
+                return redirect(admin_base_path('auth/setting'));
+            });
         });
-
-        $form->saved(function () {
-            admin_toastr(trans('admin.update_succeeded'));
-
-            return redirect(admin_url('auth/setting'));
-        });
-
-        return $form;
     }
 
     /**
@@ -164,55 +139,5 @@ class AuthController extends Controller
         return Lang::has('auth.failed')
             ? trans('auth.failed')
             : 'These credentials do not match our records.';
-    }
-
-    /**
-     * Get the post login redirect path.
-     *
-     * @return string
-     */
-    protected function redirectPath()
-    {
-        if (method_exists($this, 'redirectTo')) {
-            return $this->redirectTo();
-        }
-
-        return property_exists($this, 'redirectTo') ? $this->redirectTo : config('admin.route.prefix');
-    }
-
-    /**
-     * Send the response after the user was authenticated.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return \Illuminate\Http\Response
-     */
-    protected function sendLoginResponse(Request $request)
-    {
-        admin_toastr(trans('admin.login_successful'));
-
-        $request->session()->regenerate();
-
-        return redirect()->intended($this->redirectPath());
-    }
-
-    /**
-     * Get the login username to be used by the controller.
-     *
-     * @return string
-     */
-    protected function username()
-    {
-        return 'username';
-    }
-
-    /**
-     * Get the guard to be used during authentication.
-     *
-     * @return \Illuminate\Contracts\Auth\StatefulGuard
-     */
-    protected function guard()
-    {
-        return Admin::guard();
     }
 }

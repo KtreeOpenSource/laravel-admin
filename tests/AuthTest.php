@@ -17,7 +17,7 @@ class AuthTest extends TestCase
 
     public function testLogin()
     {
-        $credentials = ['username' => 'admin', 'password' => 'admin'];
+        $credentials = ['userName' => 'admin', 'password' => 'admin'];
 
         $this->visit('admin/auth/login')
             ->see('login')
@@ -40,7 +40,7 @@ class AuthTest extends TestCase
 
             ->see('Dependencies')
             ->see('php')
-//            ->see('>=7.0.0')
+            ->see('>=7.0.0')
             ->see('laravel/framework');
 
         $this

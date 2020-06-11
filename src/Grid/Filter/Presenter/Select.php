@@ -152,7 +152,7 @@ $(document).on('change', ".{$this->getClass($column)}", function () {
                 text : item.$textField
             }));
         });
-
+        
         $(target).trigger('change');
     });
 });

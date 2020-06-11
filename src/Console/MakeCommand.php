@@ -3,8 +3,8 @@
 namespace Encore\Admin\Console;
 
 use Illuminate\Console\GeneratorCommand;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
 class MakeCommand extends GeneratorCommand
 {
@@ -13,34 +13,14 @@ class MakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $signature = 'admin:make {name}
-        {--model=}
-        {--title=}
-        {--stub= : Path to the custom stub file. }
-        {--namespace=}
-        {--O|output}';
+    protected $name = 'admin:make';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Make admin controller';
-
-    /**
-     * @var ResourceGenerator
-     */
-    protected $generator;
-
-    /**
-     * @var string
-     */
-    protected $controllerName;
-
-    /**
-     * @var string
-     */
-    protected $modelName;
+    protected $description = 'Make empty admin controller';
 
     /**
      * Execute the console command.
@@ -49,80 +29,13 @@ class MakeCommand extends GeneratorCommand
      */
     public function handle()
     {
-        $this->modelName = $this->getModelName();
-        $this->controllerName = $this->getControllerName();
-
         if (!$this->modelExists()) {
             $this->error('Model does not exists !');
 
             return false;
         }
 
-        $stub = $this->option('stub');
-
-        if ($stub and !is_file($stub)) {
-            $this->error('The stub file dose not exist.');
-
-            return false;
-        }
-
-        $this->generator = new ResourceGenerator($this->modelName);
-
-        if ($this->option('output')) {
-            return $this->output($this->modelName);
-        }
-
-        if (parent::handle() !== false) {
-            $path = Str::plural(Str::kebab(class_basename($this->modelName)));
-
-            $this->line('');
-            $this->comment('Add the following route to app/Admin/routes.php:');
-            $this->line('');
-            $this->info("    \$router->resource('{$path}', {$this->controllerName}::class);");
-            $this->line('');
-        }
-    }
-
-    /**
-     * @return array|string|null
-     */
-    protected function getControllerName()
-    {
-        return $this->argument('name');
-    }
-
-    /**
-     * @return array|string|null
-     */
-    protected function getModelName()
-    {
-        return $this->option('model');
-    }
-
-    /**
-     * @throws \ReflectionException
-     *
-     * @return array|bool|string|null
-     */
-    protected function getTitle()
-    {
-        if ($title = $this->option('title')) {
-            return $title;
-        }
-
-        return __((new \ReflectionClass($this->modelName))->getShortName());
-    }
-
-    /**
-     * @param string $modelName
-     */
-    protected function output($modelName)
-    {
-        $this->alert("laravel-admin controller code for model [{$modelName}]");
-
-        $this->info($this->generator->generateGrid());
-        $this->info($this->generator->generateShow());
-        $this->info($this->generator->generateForm());
+        parent::handle();
     }
 
     /**
@@ -132,11 +45,13 @@ class MakeCommand extends GeneratorCommand
      */
     protected function modelExists()
     {
-        if (empty($this->modelName)) {
+        $model = $this->option('model');
+
+        if (empty($model)) {
             return true;
         }
 
-        return class_exists($this->modelName) && is_subclass_of($this->modelName, Model::class);
+        return class_exists($model);
     }
 
     /**
@@ -152,36 +67,10 @@ class MakeCommand extends GeneratorCommand
         $stub = parent::replaceClass($stub, $name);
 
         return str_replace(
-            [
-                'DummyModelNamespace',
-                'DummyTitle',
-                'DummyModel',
-                'DummyGrid',
-                'DummyShow',
-                'DummyForm',
-            ],
-            [
-                $this->modelName,
-                $this->getTitle(),
-                class_basename($this->modelName),
-                $this->indentCodes($this->generator->generateGrid()),
-                $this->indentCodes($this->generator->generateShow()),
-                $this->indentCodes($this->generator->generateForm()),
-            ],
+            ['DummyModelNamespace', 'DummyModel'],
+            [$this->option('model'), class_basename($this->option('model'))],
             $stub
         );
-    }
-
-    /**
-     * @param string $code
-     *
-     * @return string
-     */
-    protected function indentCodes($code)
-    {
-        $indent = str_repeat(' ', 8);
-
-        return rtrim($indent.preg_replace("/\r\n/", "\r\n{$indent}", $code));
     }
 
     /**
@@ -191,11 +80,7 @@ class MakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
-        if ($stub = $this->option('stub')) {
-            return $stub;
-        }
-
-        if ($this->modelName) {
+        if ($this->option('model')) {
             return __DIR__.'/stubs/controller.stub';
         }
 
@@ -211,22 +96,35 @@ class MakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        if ($namespace = $this->option('namespace')) {
-            return $namespace;
-        }
+        $directory = config('admin.directory');
 
-        return config('admin.route.namespace');
+        $namespace = ucfirst(basename($directory));
+
+        return $rootNamespace."\\$namespace\Controllers";
     }
 
     /**
-     * Get the desired class name from the input.
+     * Get the console command arguments.
      *
-     * @return string
+     * @return array
      */
-    protected function getNameInput()
+    protected function getArguments()
     {
-        $this->type = $this->qualifyClass($this->controllerName);
+        return [
+            ['name', InputArgument::REQUIRED, 'The name of the controller.'],
+        ];
+    }
 
-        return $this->controllerName;
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['model', null, InputOption::VALUE_REQUIRED,
+                'The eloquent model that should be use as controller data source.', ],
+        ];
     }
 }

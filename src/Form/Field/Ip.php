@@ -4,7 +4,7 @@ namespace Encore\Admin\Form\Field;
 
 class Ip extends Text
 {
-    protected $rules = 'nullable|ip';
+    protected $rules = 'ip';
 
     protected static $js = [
         '/vendor/laravel-admin/AdminLTE/plugins/input-mask/jquery.inputmask.bundle.min.js',
@@ -21,9 +21,14 @@ class Ip extends Text
 
     public function render()
     {
-        $this->inputmask($this->options);
+        $options = json_encode($this->options);
 
-        $this->prepend('<i class="fa fa-laptop fa-fw"></i>')
+        $this->script = <<<EOT
+
+$('{$this->getElementClassSelector()}').inputmask($options);
+EOT;
+
+        $this->prepend('<i class="fa fa-laptop"></i>')
             ->defaultAttribute('style', 'width: 130px');
 
         return parent::render();

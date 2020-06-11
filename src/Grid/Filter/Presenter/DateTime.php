@@ -3,7 +3,6 @@
 namespace Encore\Admin\Grid\Filter\Presenter;
 
 use Encore\Admin\Admin;
-use Illuminate\Support\Arr;
 
 class DateTime extends Presenter
 {
@@ -15,7 +14,7 @@ class DateTime extends Presenter
     /**
      * @var string
      */
-    protected $format = 'YYYY-MM-DD HH:mm:ss';
+    protected $format = 'YYYY-MM-DD';
 
     /**
      * DateTime constructor.
@@ -32,27 +31,27 @@ class DateTime extends Presenter
      *
      * @return mixed
      */
-    protected function getOptions(array $options): array
+    protected function getOptions(array  $options) : array
     {
-        $options['format'] = Arr::get($options, 'format', $this->format);
-        $options['locale'] = Arr::get($options, 'locale', config('app.locale'));
-
+        $options['format'] = array_get($options, 'format', $this->format);
+        $options['locale'] = array_get($options, 'locale', config('app.locale'));
+        $options['dateFormat'] = $options['format'];
+        unset($options['format']);
         return $options;
     }
 
     protected function prepare()
     {
-        $script = "$('#{$this->filter->getId()}').datetimepicker(".json_encode($this->options).');';
+        $script = "$('#{$this->filter->getId()}').datepicker(".
+        json_encode($this->options).");";
 
         Admin::script($script);
     }
 
-    public function variables(): array
+    public function variables() : array
     {
         $this->prepare();
 
-        return [
-            'group' => $this->filter->group,
-        ];
+        return [];
     }
 }

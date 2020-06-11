@@ -10,7 +10,7 @@
 
     <div class="btn-container pull-right">
       {!! $grid->renderCreateButton() !!}
-      <?php //echo $grid->renderFilter();?>
+      <?php //echo $grid->renderFilter(); ?>
       {!! $grid->renderExportButton() !!}
     </div>
     <div class="box">

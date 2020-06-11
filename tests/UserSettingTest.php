@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\File;
 
 class UserSettingTest extends TestCase
 {
-    protected function setUp(): void
+    public function setUp()
     {
         parent::setUp();
 
@@ -16,7 +16,7 @@ class UserSettingTest extends TestCase
     {
         $this->visit('admin/auth/setting')
             ->see('User setting')
-            ->see('Username')
+            ->see('UserName')
             ->see('Name')
             ->see('Avatar')
             ->see('Password')
@@ -83,7 +83,7 @@ class UserSettingTest extends TestCase
             ->seePageIs('admin/auth/login')
             ->dontSeeIsAuthenticated('admin');
 
-        $credentials = ['username' => 'admin', 'password' => '123456'];
+        $credentials = ['userName' => 'admin', 'password' => '123456'];
 
         $this->visit('admin/auth/login')
             ->see('login')

@@ -6,7 +6,7 @@ use Encore\Admin\Facades\Admin;
 
 class Checkbox extends Radio
 {
-    protected function prepare()
+    protected function prepare() : void
     {
         $script = "$('.{$this->filter->getId()}').iCheck({checkboxClass:'icheckbox_minimal-blue'});";
 

@@ -4,7 +4,6 @@ namespace Encore\Admin\Console;
 
 use Encore\Admin\Admin;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 
 class ImportCommand extends Command
 {
@@ -20,7 +19,7 @@ class ImportCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Import a Laravel-admin extension';
+    protected $description = 'Import a extension';
 
     /**
      * Execute the console command.
@@ -31,11 +30,11 @@ class ImportCommand extends Command
     {
         $extension = $this->argument('extension');
 
-        if (empty($extension) || !Arr::has(Admin::$extensions, $extension)) {
+        if (empty($extension) || !array_has(Admin::$extensions, $extension)) {
             $extension = $this->choice('Please choose a extension to import', array_keys(Admin::$extensions));
         }
 
-        $className = Arr::get(Admin::$extensions, $extension);
+        $className = array_get(Admin::$extensions, $extension);
 
         if (!class_exists($className) || !method_exists($className, 'import')) {
             $this->error("Invalid Extension [$className]");

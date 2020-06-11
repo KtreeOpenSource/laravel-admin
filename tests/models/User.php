@@ -10,8 +10,6 @@ class User extends Model
 
     protected $appends = ['full_name', 'position'];
 
-    protected $casts = ['data' => 'array'];
-
     public function profile()
     {
         return $this->hasOne(Profile::class, 'user_id');
@@ -19,7 +17,7 @@ class User extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->profile['first_name']} {$this->profile['last_name']}";
+        return "{$this->profile['firstName']} {$this->profile['lastName']}";
     }
 
     public function getPositionAttribute()

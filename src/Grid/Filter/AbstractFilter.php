@@ -10,8 +10,6 @@ use Encore\Admin\Grid\Filter\Presenter\Presenter;
 use Encore\Admin\Grid\Filter\Presenter\Radio;
 use Encore\Admin\Grid\Filter\Presenter\Select;
 use Encore\Admin\Grid\Filter\Presenter\Text;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 
 /**
  * Class AbstractFilter.
@@ -50,11 +48,6 @@ abstract class AbstractFilter
     protected $value;
 
     /**
-     * @var array|string
-     */
-    protected $defaultValue;
-
-    /**
      * @var string
      */
     protected $column;
@@ -82,16 +75,6 @@ abstract class AbstractFilter
      * @var string
      */
     protected $view = 'admin::filter.where';
-
-    /**
-     * @var Collection
-     */
-    public $group;
-
-    /**
-     * @var bool
-     */
-    protected $ignore = false;
 
     /**
      * AbstractFilter constructor.
@@ -144,17 +127,15 @@ abstract class AbstractFilter
         $columns = explode('.', $column);
 
         if (count($columns) == 1) {
-            $name = $columns[0];
-        } else {
-            $name = array_shift($columns);
-            foreach ($columns as $column) {
-                $name .= "[$column]";
-            }
+            return $columns[0];
         }
 
-        $parenName = $this->parent->getName();
+        $name = array_shift($columns);
+        foreach ($columns as $column) {
+            $name .= "[$column]";
+        }
 
-        return $parenName ? "{$parenName}_{$name}" : $name;
+        return $name;
     }
 
     /**
@@ -178,6 +159,14 @@ abstract class AbstractFilter
     }
 
     /**
+     * @param Filter $filter
+     */
+    public function setColumnsFilterParent(\Encore\Admin\Grid\ColumnFilter $filter)
+    {
+        $this->parent = $filter;
+    }
+
+    /**
      * Get siblings of current filter.
      *
      * @param null $index
@@ -187,7 +176,7 @@ abstract class AbstractFilter
     public function siblings($index = null)
     {
         if (!is_null($index)) {
-            return Arr::get($this->parent->filters(), $index);
+            return array_get($this->parent->filters(), $index);
         }
 
         return $this->parent->filters();
@@ -230,11 +219,7 @@ abstract class AbstractFilter
      */
     public function condition($inputs)
     {
-        if ($this->ignore) {
-            return;
-        }
-
-        $value = Arr::get($inputs, $this->column);
+        $value = array_get($inputs, $this->column);
 
         if (!isset($value)) {
             return;
@@ -246,21 +231,9 @@ abstract class AbstractFilter
     }
 
     /**
-     * Ignore this query filter.
-     *
-     * @return $this
-     */
-    public function ignore()
-    {
-        $this->ignore = true;
-
-        return $this;
-    }
-
-    /**
      * Select filter.
      *
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array $options
      *
      * @return Select
      */
@@ -270,7 +243,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array $options
      *
      * @return MultipleSelect
      */
@@ -280,7 +253,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array $options
      *
      * @return Radio
      */
@@ -290,7 +263,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array $options
      *
      * @return Checkbox
      */
@@ -302,7 +275,7 @@ abstract class AbstractFilter
     /**
      * Datetime filter.
      *
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array $options
      *
      * @return DateTime
      */
@@ -386,22 +359,6 @@ abstract class AbstractFilter
     }
 
     /**
-     * Set default value for filter.
-     *
-     * @param null $default
-     *
-     * @return $this
-     */
-    public function default($default = null)
-    {
-        if ($default) {
-            $this->defaultValue = $default;
-        }
-
-        return $this;
-    }
-
-    /**
      * Get element id.
      *
      * @return array|string
@@ -412,29 +369,13 @@ abstract class AbstractFilter
     }
 
     /**
-     * Set element id.
-     *
-     * @param string $id
-     *
-     * @return $this
-     */
-    public function setId($id)
-    {
-        $this->id = $this->formatId($id);
-
-        return $this;
-    }
-
-    /**
      * Get column name of current filter.
      *
      * @return string
      */
     public function getColumn()
     {
-        $parentName = $this->parent->getName();
-
-        return $parentName ? "{$parentName}_{$this->column}" : $this->column;
+        return $this->column;
     }
 
     /**
@@ -472,8 +413,7 @@ abstract class AbstractFilter
     {
         $args = func_get_args();
 
-        $relation = substr($this->column, 0, strrpos($this->column, '.'));
-        $args[0] = last(explode('.', $this->column));
+        list($relation, $args[0]) = explode('.', $this->column);
 
         return ['whereHas' => [$relation, function ($relation) use ($args) {
             call_user_func_array([$relation, $this->query], $args);
@@ -489,10 +429,9 @@ abstract class AbstractFilter
     {
         return array_merge([
             'id'        => $this->id,
-            'column'    => $this->column,
             'name'      => $this->formatName($this->column),
             'label'     => $this->label,
-            'value'     => $this->value ?: $this->defaultValue,
+            'value'     => $this->value,
             'presenter' => $this->presenter(),
         ], $this->presenter()->variables());
     }
@@ -505,6 +444,22 @@ abstract class AbstractFilter
     public function render()
     {
         return view($this->view, $this->variables());
+    }
+
+    /**
+     * Render this column filter.
+     *
+     * @return \Illuminate\View\View|string
+     */
+    public function columnFilterRender(){
+        $variables = array_merge([
+          'columnFilter' => true
+        ],$this->variables());
+
+        if($this->view == 'admin::filter.where'){
+          return view($this->presenter()->view(), $variables);
+        }
+        return view($this->view,$variables);
     }
 
     /**

@@ -3,7 +3,6 @@
 namespace Encore\Admin\Grid\Displayers;
 
 use Encore\Admin\Admin;
-use Illuminate\Support\Arr;
 
 class Editable extends AbstractDisplayer
 {
@@ -24,14 +23,7 @@ class Editable extends AbstractDisplayer
      *
      * @var array
      */
-    protected $options = [
-        'emptytext'  => '<i class="fa fa-pencil"></i>',
-    ];
-
-    /**
-     * @var array
-     */
-    protected $attributes = [];
+    protected $options = [];
 
     /**
      * Add options for editable.
@@ -41,16 +33,6 @@ class Editable extends AbstractDisplayer
     public function addOptions($options = [])
     {
         $this->options = array_merge($this->options, $options);
-    }
-
-    /**
-     * Add attributes for editable.
-     *
-     * @param array $attributes
-     */
-    public function addAttributes($attributes = [])
-    {
-        $this->attributes = array_merge($this->attributes, $attributes);
     }
 
     /**
@@ -70,28 +52,20 @@ class Editable extends AbstractDisplayer
     /**
      * Select type editable.
      *
-     * @param array|\Closure $options
+     * @param array $options
      */
     public function select($options = [])
     {
-        $useClosure = false;
-
-        if ($options instanceof \Closure) {
-            $useClosure = true;
-            $options = $options->call($this, $this->row);
-        }
-
         $source = [];
 
-        foreach ($options as $value => $text) {
-            $source[] = compact('value', 'text');
+        foreach ($options as $key => $value) {
+            $source[] = [
+                'value' => $key,
+                'text'  => $value,
+            ];
         }
 
-        if ($useClosure) {
-            $this->addAttributes(['data-source' => json_encode($source)]);
-        } else {
-            $this->addOptions(compact('source'));
-        }
+        $this->addOptions(['source' => $source]);
     }
 
     /**
@@ -135,14 +109,6 @@ class Editable extends AbstractDisplayer
     }
 
     /**
-     * Time type editable.
-     */
-    public function time()
-    {
-        $this->combodate('HH:mm:ss');
-    }
-
-    /**
      * Combodate type editable.
      *
      * @param string $format
@@ -152,28 +118,22 @@ class Editable extends AbstractDisplayer
         $this->type = 'combodate';
 
         $this->addOptions([
-            'format'     => $format,
-            'viewformat' => $format,
-            'template'   => $format,
-            'combodate'  => [
+            'format'        => $format,
+            'viewformat'    => $format,
+            'template'      => $format,
+            'combodate'     => [
                 'maxYear' => 2035,
             ],
         ]);
     }
 
-    /**
-     * @param array $arguments
-     */
     protected function buildEditableOptions(array $arguments = [])
     {
-        $this->type = Arr::get($arguments, 0, 'text');
+        $this->type = array_get($arguments, 0, 'text');
 
         call_user_func_array([$this, $this->type], array_slice($arguments, 1));
     }
 
-    /**
-     * @return string
-     */
     public function display()
     {
         $this->options['name'] = $column = $this->column->getName();
@@ -184,34 +144,16 @@ class Editable extends AbstractDisplayer
 
         $options = json_encode($this->options);
 
-        $options = substr($options, 0, -1).<<<'STR'
-    ,
-    "success":function(response, newValue){
-        if (response.status){
-            $.admin.toastr.success(response.message, '', {positionClass:"toast-top-center"});
-        } else {
-            $.admin.toastr.error(response.message, '', {positionClass:"toast-top-center"});
-        }
-    }
-}
-STR;
-
         Admin::script("$('.$class').editable($options);");
-
-        $this->value = htmlentities($this->value);
 
         $attributes = [
             'href'       => '#',
             'class'      => "$class",
             'data-type'  => $this->type,
             'data-pk'    => "{$this->getKey()}",
-            'data-url'   => "{$this->getResource()}/{$this->getKey()}",
+            'data-url'   => "{$this->grid->resource()}/{$this->getKey()}",
             'data-value' => "{$this->value}",
         ];
-
-        if (!empty($this->attributes)) {
-            $attributes = array_merge($attributes, $this->attributes);
-        }
 
         $attributes = collect($attributes)->map(function ($attribute, $name) {
             return "$name='$attribute'";

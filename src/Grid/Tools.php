@@ -2,12 +2,10 @@
 
 namespace Encore\Admin\Grid;
 
-use Encore\Admin\Actions\GridAction;
 use Encore\Admin\Grid;
 use Encore\Admin\Grid\Tools\AbstractTool;
 use Encore\Admin\Grid\Tools\BatchActions;
-use Encore\Admin\Grid\Tools\FilterButton;
-use Illuminate\Contracts\Support\Htmlable;
+use Encore\Admin\Grid\Tools\RefreshButton;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Collection;
 
@@ -46,8 +44,9 @@ class Tools implements Renderable
      */
     protected function appendDefaultTools()
     {
-        $this->append(new BatchActions())
-            ->append(new FilterButton());
+        $this->append(new BatchActions());
+
+        $this->append(new RefreshButton());
     }
 
     /**
@@ -59,10 +58,6 @@ class Tools implements Renderable
      */
     public function append($tool)
     {
-        if ($tool instanceof GridAction) {
-            $tool->setGrid($this->grid);
-        }
-
         $this->tools->push($tool);
 
         return $this;
@@ -83,31 +78,15 @@ class Tools implements Renderable
     }
 
     /**
-     * Disable filter button.
-     *
-     * @return void
-     */
-    public function disableFilterButton(bool $disable = true)
-    {
-        $this->tools = $this->tools->map(function ($tool) use ($disable) {
-            if ($tool instanceof FilterButton) {
-                return $tool->disable($disable);
-            }
-
-            return $tool;
-        });
-    }
-
-    /**
      * Disable refresh button.
      *
      * @return void
-     *
-     * @deprecated
      */
-    public function disableRefreshButton(bool $disable = true)
+    public function disableRefreshButton()
     {
-        //
+        $this->tools = $this->tools->reject(function ($tool) {
+            return $tool instanceof RefreshButton;
+        });
     }
 
     /**
@@ -115,14 +94,10 @@ class Tools implements Renderable
      *
      * @return void
      */
-    public function disableBatchActions(bool $disable = true)
+    public function disableBatchActions()
     {
-        $this->tools = $this->tools->map(function ($tool) use ($disable) {
-            if ($tool instanceof BatchActions) {
-                return $tool->disable($disable);
-            }
-
-            return $tool;
+        $this->tools = $this->tools->reject(function ($tool) {
+            return $tool instanceof BatchActions;
         });
     }
 
@@ -143,21 +118,10 @@ class Tools implements Renderable
      */
     public function render()
     {
+        $this->disableRefreshButton();
         return $this->tools->map(function ($tool) {
             if ($tool instanceof AbstractTool) {
-                if (!$tool->allowed()) {
-                    return '';
-                }
-
                 return $tool->setGrid($this->grid)->render();
-            }
-
-            if ($tool instanceof Renderable) {
-                return $tool->render();
-            }
-
-            if ($tool instanceof Htmlable) {
-                return $tool->toHtml();
             }
 
             return (string) $tool;
