@@ -4,6 +4,7 @@ namespace Encore\Admin\Layout;
 
 use Closure;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\MessageBag;
 
 class Content implements Renderable
 {
@@ -22,16 +23,23 @@ class Content implements Renderable
     protected $description = '';
 
     /**
-     * Page breadcrumb.
+     * Content extra columns.
      *
-     * @var array
+     * @var string
      */
-    protected $breadcrumb = [];
+    protected $extraColumns = [];
 
     /**
      * @var Row[]
      */
     protected $rows = [];
+
+    /**
+     * Content breadcrumb.
+     *
+     * @var array
+     */
+    protected $breadcrumb = [];
 
     /**
      * Content constructor.
@@ -74,41 +82,33 @@ class Content implements Renderable
     }
 
     /**
-     * Set breadcrumb of content.
+     * Set extra columns of content.
      *
-     * @param array ...$breadcrumb
+     * @param array $extraColumns
      *
      * @return $this
      */
-    public function breadcrumb(...$breadcrumb)
+    public function extraColumns($extraColumns = [])
     {
-        $this->validateBreadcrumb($breadcrumb);
-
-        $this->breadcrumb = (array) $breadcrumb;
+        $this->extraColumns = $extraColumns;
 
         return $this;
     }
 
+
     /**
-     * Validate content breadcrumb.
+     * Set extra columns of content.
      *
-     * @param array $breadcrumb
+     * @param array $extraColumns
      *
-     * @throws \Exception
-     *
-     * @return bool
+     * @return $this
      */
-    protected function validateBreadcrumb(array $breadcrumb)
+    public function breadcrumb($breadcrumb = [])
     {
-        foreach ($breadcrumb as $item) {
-            if (!is_array($item) || !array_has($item, 'text')) {
-                throw new  \Exception('Breadcrumb format error!');
-            }
-        }
+        $this->breadcrumb = $breadcrumb;
 
-        return true;
+        return $this;
     }
-
     /**
      * Alias of method row.
      *
@@ -172,21 +172,6 @@ class Content implements Renderable
     }
 
     /**
-     * Set success message for content.
-     *
-     * @param string $title
-     * @param string $message
-     *
-     * @return $this
-     */
-    public function withSuccess($title = '', $message = '')
-    {
-        admin_success($title, $message);
-
-        return $this;
-    }
-
-    /**
      * Set error message for content.
      *
      * @param string $title
@@ -196,37 +181,9 @@ class Content implements Renderable
      */
     public function withError($title = '', $message = '')
     {
-        admin_error($title, $message);
+        $error = new MessageBag(compact('title', 'message'));
 
-        return $this;
-    }
-
-    /**
-     * Set warning message for content.
-     *
-     * @param string $title
-     * @param string $message
-     *
-     * @return $this
-     */
-    public function withWarning($title = '', $message = '')
-    {
-        admin_warning($title, $message);
-
-        return $this;
-    }
-
-    /**
-     * Set info message for content.
-     *
-     * @param string $title
-     * @param string $message
-     *
-     * @return $this
-     */
-    public function withInfo($title = '', $message = '')
-    {
-        admin_info($title, $message);
+        session()->flash('error', $error);
 
         return $this;
     }
@@ -241,10 +198,18 @@ class Content implements Renderable
         $items = [
             'header'      => $this->header,
             'description' => $this->description,
-            'breadcrumb'  => $this->breadcrumb,
+            'extraColumns' => $this->extraColumns,
+            'breadcrumb' => $this->breadcrumb,
             'content'     => $this->build(),
         ];
-
         return view('admin::content', $items)->render();
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->render();
     }
 }

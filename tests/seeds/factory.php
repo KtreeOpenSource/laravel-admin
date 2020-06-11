@@ -7,7 +7,7 @@ $factory = app(Factory::class);
 
 $factory->define(Tests\Models\User::class, function (Faker $faker) {
     return [
-        'username' => $faker->userName,
+        'userName' => $faker->userName,
         'email'    => $faker->email,
         'mobile'   => $faker->phoneNumber,
         'avatar'   => $faker->imageUrl(),
@@ -17,8 +17,8 @@ $factory->define(Tests\Models\User::class, function (Faker $faker) {
 
 $factory->define(Tests\Models\Profile::class, function (Faker $faker) {
     return [
-        'first_name' => $faker->firstName,
-        'last_name'  => $faker->lastName,
+        'firstName' => $faker->firstName,
+        'lastName'  => $faker->lastName,
         'postcode'   => $faker->postcode,
         'address'    => $faker->address,
         'latitude'   => $faker->latitude,

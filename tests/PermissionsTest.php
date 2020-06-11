@@ -81,7 +81,7 @@ class PermissionsTest extends TestCase
     public function testAddUserAndAssignPermission()
     {
         $user = [
-            'username'              => 'Test',
+            'userName'              => 'Test',
             'name'                  => 'Name',
             'password'              => '123456',
             'password_confirmation' => '123456',
@@ -91,7 +91,7 @@ class PermissionsTest extends TestCase
             ->see('Create')
             ->submitForm('Submit', $user)
             ->seePageIs('admin/auth/users')
-            ->seeInDatabase(config('admin.database.users_table'), ['username' => 'Test']);
+            ->seeInDatabase(config('admin.database.users_table'), ['userName' => 'Test']);
 
         $this->assertFalse(Administrator::find(2)->isAdministrator());
 
@@ -140,7 +140,7 @@ class PermissionsTest extends TestCase
     public function testPermissionThroughRole()
     {
         $user = [
-            'username'              => 'Test',
+            'userName'              => 'Test',
             'name'                  => 'Name',
             'password'              => '123456',
             'password_confirmation' => '123456',
@@ -151,7 +151,7 @@ class PermissionsTest extends TestCase
             ->see('Create')
             ->submitForm('Submit', $user)
             ->seePageIs('admin/auth/users')
-            ->seeInDatabase(config('admin.database.users_table'), ['username' => 'Test']);
+            ->seeInDatabase(config('admin.database.users_table'), ['userName' => 'Test']);
 
         $this->assertFalse(Administrator::find(2)->isAdministrator());
 

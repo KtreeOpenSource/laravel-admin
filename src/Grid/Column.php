@@ -9,6 +9,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Encore\Admin\Grid\ColumnFilter;
 
 class Column
 {
@@ -105,11 +106,16 @@ class Column
     protected static $htmlAttributes = [];
 
     /**
-     * @var Model
+     * @var
      */
     protected static $model;
 
     const SELECT_COLUMN_NAME = '__row_selector__';
+
+    /**
+     * @var
+     */
+    protected $filter;
 
     /**
      * @param string $name
@@ -120,6 +126,16 @@ class Column
         $this->name = $name;
 
         $this->label = $this->formatLabel($label);
+    }
+
+    /**
+     * Setup grid filter.
+     *
+     * @return void
+     */
+    protected function setupFilter($model)
+    {
+        $this->filter = new ColumnFilter($model);
     }
 
     /**
@@ -154,6 +170,8 @@ class Column
         $this->grid = $grid;
 
         $this->setModel($grid->model()->eloquent());
+
+        $this->setupFilter($grid->model()->eloquent());
     }
 
     /**
@@ -303,41 +321,6 @@ class Column
     }
 
     /**
-     * Display column using array value map.
-     *
-     * @param array $values
-     * @param null  $default
-     *
-     * @return $this
-     */
-    public function using(array $values, $default = null)
-    {
-        return $this->display(function ($value) use ($values, $default) {
-            if (is_null($value)) {
-                return $default;
-            }
-
-            return array_get($values, $value, $default);
-        });
-    }
-
-    /**
-     * Render this column with the given view.
-     *
-     * @param string $view
-     *
-     * @return $this
-     */
-    public function view($view)
-    {
-        return $this->display(function ($value) use ($view) {
-            $model = $this;
-
-            return view($view, compact('model', 'value'))->render();
-        });
-    }
-
-    /**
      * If has display callbacks.
      *
      * @return bool
@@ -358,16 +341,8 @@ class Column
     protected function callDisplayCallbacks($value, $key)
     {
         foreach ($this->displayCallbacks as $callback) {
-            $previous = $value;
-
             $callback = $this->bindOriginalRow($callback, $key);
-            $value = call_user_func_array($callback, [$value, $this]);
-
-            if (($value instanceof static) &&
-                ($last = array_pop($this->displayCallbacks))
-            ) {
-                $value = call_user_func($last, $previous);
-            }
+            $value = call_user_func($callback, $value);
         }
 
         return $value;
@@ -453,7 +428,6 @@ class Column
         $column = $this;
 
         $this->display(function ($value) use ($grid, $column, $class) {
-            /** @var AbstractDisplayer $definition */
             $definition = new $class($value, $grid, $column, $this);
 
             return $definition->display();
@@ -478,6 +452,29 @@ class Column
         }
 
         return $item;
+    }
+
+    /**
+     * Create the column filter.
+     *
+     * @return string|void
+     */
+    public function filtering()
+    {
+        if ($this->filter) {
+            return $this->filter->render();
+        }
+        return '';
+    }
+
+    /**
+     * To render the grid filter fields.
+     *
+     * @param Closure $callback
+     */
+    public function renderFilter(Closure $callback)
+    {
+        call_user_func($callback, $this->filter);
     }
 
     /**
@@ -586,7 +583,7 @@ class Column
             return $this->display(function ($value) use ($abstract, $grid, $column, $arguments) {
                 $displayer = new $abstract($value, $grid, $column, $this);
 
-                return $displayer->display(...$arguments);
+                return call_user_func_array([$displayer, 'display'], $arguments);
             });
         }
 

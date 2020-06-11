@@ -24,7 +24,7 @@ class UsersTest extends TestCase
     public function testCreateUser()
     {
         $user = [
-            'username'              => 'Test',
+            'userName'              => 'Test',
             'name'                  => 'Name',
             'password'              => '123456',
             'password_confirmation' => '123456',
@@ -35,7 +35,7 @@ class UsersTest extends TestCase
             ->see('Create')
             ->submitForm('Submit', $user)
             ->seePageIs('admin/auth/users')
-            ->seeInDatabase(config('admin.database.users_table'), ['username' => 'Test']);
+            ->seeInDatabase(config('admin.database.users_table'), ['userName' => 'Test']);
 
         // assign role to user
         $this->visit('admin/auth/users/2/edit')
@@ -47,7 +47,7 @@ class UsersTest extends TestCase
         $this->visit('admin/auth/logout')
             ->dontSeeIsAuthenticated('admin')
             ->seePageIs('admin/auth/login')
-            ->submitForm('Login', ['username' => $user['username'], 'password' => $user['password']])
+            ->submitForm('Login', ['userName' => $user['userName'], 'password' => $user['password']])
             ->see('dashboard')
             ->seeIsAuthenticated('admin')
             ->seePageIs('admin');
@@ -87,7 +87,7 @@ class UsersTest extends TestCase
             ->visit('admin/auth/logout')
             ->dontSeeIsAuthenticated('admin')
             ->seePageIs('admin/auth/login')
-            ->submitForm('Login', ['username' => $this->user->username, 'password' => $password])
+            ->submitForm('Login', ['userName' => $this->user->userName, 'password' => $password])
             ->see('dashboard')
             ->seeIsAuthenticated('admin')
             ->seePageIs('admin');

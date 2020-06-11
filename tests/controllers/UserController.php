@@ -71,7 +71,7 @@ class UserController extends Controller
         return Admin::grid(User::class, function (Grid $grid) {
             $grid->id('ID')->sortable();
 
-            $grid->username();
+            $grid->userName();
             $grid->email();
             $grid->mobile();
             $grid->full_name();
@@ -105,7 +105,7 @@ class UserController extends Controller
             $grid->updated_at();
 
             $grid->filter(function ($filter) {
-                $filter->like('username');
+                $filter->like('userName');
                 $filter->like('email');
                 $filter->like('profile.postcode');
                 $filter->between('profile.start_at')->datetime();
@@ -134,7 +134,7 @@ class UserController extends Controller
             $form->disableDeletion();
 
             $form->display('id', 'ID');
-            $form->text('username');
+            $form->text('userName');
             $form->email('email')->rules('required');
             $form->mobile('mobile');
             $form->image('avatar')->help('上传头像', 'fa-image');
@@ -144,8 +144,8 @@ class UserController extends Controller
 
             $form->divide();
 
-            $form->text('profile.first_name');
-            $form->text('profile.last_name');
+            $form->text('profile.firstName');
+            $form->text('profile.lastName');
             $form->text('profile.postcode')->help('Please input your postcode');
             $form->textarea('profile.address')->rows(15);
             $form->map('profile.latitude', 'profile.longitude', 'Position');

@@ -5,6 +5,7 @@ namespace Encore\Admin\Form\Field;
 use Encore\Admin\Form;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\MessageBag;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 trait UploadField
@@ -65,7 +66,7 @@ trait UploadField
             'browseLabel'          => trans('admin.browse'),
             'showRemove'           => false,
             'showUpload'           => false,
-//            'initialCaption'       => $this->initialCaption($this->value),
+            'initialCaption'       => $this->initialCaption($this->value),
             'deleteExtraData'      => [
                 $this->formatName($this->column) => static::FILE_DELETE_FLAG,
                 static::FILE_DELETE_FLAG         => '',
@@ -94,7 +95,7 @@ trait UploadField
 
         $this->options([
             //'initialPreview'        => $this->preview(),
-            'initialPreviewConfig' => $this->initialPreviewConfig(),
+            'initialPreviewConfig'  => $this->initialPreviewConfig(),
         ]);
     }
 
@@ -129,26 +130,20 @@ trait UploadField
      *
      * @param string $disk Disks defined in `config/filesystems.php`.
      *
-     * @throws \Exception
-     *
      * @return $this
      */
     public function disk($disk)
     {
-        try {
-            $this->storage = Storage::disk($disk);
-        } catch (\Exception $exception) {
-            if (!array_key_exists($disk, config('filesystems.disks'))) {
-                admin_error(
-                    'Config error.',
-                    "Disk [$disk] not configured, please add a disk config in `config/filesystems.php`."
-                );
+        if (!array_key_exists($disk, config('filesystems.disks'))) {
+            $error = new MessageBag([
+                'title'   => 'Config error.',
+                'message' => "Disk [$disk] not configured, please add a disk config in `config/filesystems.php`.",
+            ]);
 
-                return $this;
-            }
-
-            throw $exception;
+            return session()->flash('error', $error);
         }
+
+        $this->storage = Storage::disk($disk);
 
         return $this;
     }
@@ -293,8 +288,12 @@ trait UploadField
             return $path;
         }
 
-        if ($this->storage) {
-            return $this->storage->url($path);
+        /*if (strpos($path, 'storage') !== false) {
+            return $path;
+        }*/
+
+        if (preg_match('#^/storage#', $path) === 1) {
+            return $path;
         }
 
         return Storage::disk(config('admin.upload.disk'))->url($path);

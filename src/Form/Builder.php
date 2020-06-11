@@ -4,7 +4,6 @@ namespace Encore\Admin\Form;
 
 use Encore\Admin\Admin;
 use Encore\Admin\Form;
-use Encore\Admin\Form\Field\Hidden;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -42,11 +41,18 @@ class Builder
     /**
      * @var array
      */
-    protected $options = [];
+    protected $options
+        = [
+            'enableSubmit' => true,
+            'enableReset' => true,
+            'disableCustomButton' => false,
+            'label'               =>'Button'
+        ];
 
     /**
      * Modes constants.
      */
+    const MODE_VIEW = 'view';
     const MODE_EDIT = 'edit';
     const MODE_CREATE = 'create';
 
@@ -67,20 +73,18 @@ class Builder
      */
     protected $tools;
 
-    /**
-     * @var Footer
-     */
-    protected $footer;
+    public $url;
 
     /**
      * Width for label and field.
      *
      * @var array
      */
-    protected $width = [
-        'label' => 2,
-        'field' => 8,
-    ];
+    protected $width
+        = [
+            'label' => 2,
+            'field' => 8,
+        ];
 
     /**
      * View for this form.
@@ -88,13 +92,6 @@ class Builder
      * @var string
      */
     protected $view = 'admin::form';
-
-    /**
-     * Form title.
-     *
-     * @var string
-     */
-    protected $title;
 
     /**
      * Builder constructor.
@@ -107,36 +104,23 @@ class Builder
 
         $this->fields = new Collection();
 
-        $this->init();
+        $this->setupTools();
     }
 
     /**
-     * Do initialize.
+     * Setup grid tools.
      */
-    public function init()
+    public function setupTools()
     {
         $this->tools = new Tools($this);
-        $this->footer = new Footer($this);
     }
 
     /**
-     * Get form tools instance.
-     *
      * @return Tools
      */
     public function getTools()
     {
         return $this->tools;
-    }
-
-    /**
-     * Get form footer instance.
-     *
-     * @return Footer
-     */
-    public function getFooter()
-    {
-        return $this->footer;
     }
 
     /**
@@ -149,14 +133,6 @@ class Builder
     public function setMode($mode = 'create')
     {
         $this->mode = $mode;
-    }
-
-    /**
-     * @return string
-     */
-    public function getMode()
-    {
-        return $this->mode;
     }
 
     /**
@@ -181,16 +157,6 @@ class Builder
     public function setResourceId($id)
     {
         $this->id = $id;
-    }
-
-    /**
-     * Get Resource id.
-     *
-     * @return mixed
-     */
-    public function getResourceId()
-    {
-        return $this->id;
     }
 
     /**
@@ -225,16 +191,6 @@ class Builder
     }
 
     /**
-     * Get label and field width.
-     *
-     * @return array
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-    /**
      * Set form action.
      *
      * @param string $action
@@ -256,7 +212,7 @@ class Builder
         }
 
         if ($this->isMode(static::MODE_EDIT)) {
-            return $this->form->resource().'/'.$this->id;
+            return $this->form->resource() . '/' . $this->id;
         }
 
         if ($this->isMode(static::MODE_CREATE)) {
@@ -281,20 +237,6 @@ class Builder
     }
 
     /**
-     * Set title for form.
-     *
-     * @param string $title
-     *
-     * @return $this
-     */
-    public function setTitle($title)
-    {
-        $this->title = $title;
-
-        return $this;
-    }
-
-    /**
      * Get fields of this builder.
      *
      * @return Collection
@@ -313,9 +255,11 @@ class Builder
      */
     public function field($name)
     {
-        return $this->fields()->first(function (Field $field) use ($name) {
-            return $field->column() == $name;
-        });
+        return $this->fields()->first(
+            function (Field $field) use ($name) {
+                return $field->column() == $name;
+            }
+        );
     }
 
     /**
@@ -396,16 +340,16 @@ class Builder
      */
     public function title()
     {
-        if ($this->title) {
-            return $this->title;
-        }
-
         if ($this->mode == static::MODE_CREATE) {
             return trans('admin.create');
         }
 
         if ($this->mode == static::MODE_EDIT) {
             return trans('admin.edit');
+        }
+
+        if ($this->mode == static::MODE_VIEW) {
+            return trans('admin.view');
         }
 
         return '';
@@ -441,7 +385,7 @@ class Builder
         }
 
         if (Str::contains($previous, url($this->getResource()))) {
-            $this->addHiddenField((new Hidden(static::PREVIOUS_URL_KEY))->value($previous));
+            $this->addHiddenField((new Form\Field\Hidden(static::PREVIOUS_URL_KEY))->value($previous));
         }
     }
 
@@ -456,8 +400,8 @@ class Builder
     {
         $attributes = [];
 
-        if ($this->isMode(self::MODE_EDIT)) {
-            $this->addHiddenField((new Hidden('_method'))->value('PUT'));
+        if ($this->mode == self::MODE_EDIT) {
+            $this->addHiddenField((new Form\Field\Hidden('_method'))->value('PUT'));
         }
 
         $this->addRedirectUrlField();
@@ -477,7 +421,7 @@ class Builder
             $html[] = "$name=\"$value\"";
         }
 
-        return '<form '.implode(' ', $html).' pjax-container>';
+        return '<form ' . implode(' ', $html) . ' pjax-container>';
     }
 
     /**
@@ -491,6 +435,78 @@ class Builder
         $this->fields = null;
 
         return '</form>';
+    }
+
+    /**
+     * Submit button of form..
+     *
+     * @return string
+     */
+    public function submitButton()
+    {
+
+        if ($this->mode == self::MODE_VIEW) {
+            return '';
+        }
+
+        if (!$this->options['enableSubmit']) {
+            return '';
+        }
+
+        $text = trans('admin.submit');
+
+        return <<<EOT
+        <div class="btn-group pull-right">
+            <button type="submit" class="pull-right form-submit-btn"
+            data-loading-text="<i class='fa fa-spinner fa-spin '></i>
+             $text">$text</button>
+        </div>
+EOT;
+    }
+
+    /**
+     * Custom button of form.
+     *
+     * @return string
+     */
+    public function customButton()
+    {
+        if ($this->mode == self::MODE_VIEW) {
+            return '';
+        }
+
+        if (!$this->options['disableCustomButton']) {
+            return '';
+        }
+        $url = $this->url;
+        $label = $this->options['label'];
+
+        return <<<EOT
+        <div class="btn-group col-md-10">
+          <a href="$url"   class="pull-right form-submit-btn" style="width: auto;"
+          data-loading-text="<i class='fa fa-spinner fa-spin '></i>$label">$label</a>
+        </div>
+EOT;
+    }
+
+    /**
+     * Reset button of form.
+     *
+     * @return string
+     */
+    public function resetButton()
+    {
+        if (!$this->options['enableReset']) {
+            return '';
+        }
+
+        $text = trans('admin.reset');
+
+        return <<<EOT
+<div class="btn-group pull-left">
+    <button type="reset" class="btn btn-warning">$text</button>
+</div>
+EOT;
     }
 
     /**
@@ -510,29 +526,11 @@ class Builder
             $this->form->model()->getUpdatedAtColumn(),
         ];
 
-        $this->fields = $this->fields()->reject(function (Field $field) use ($reservedColumns) {
-            return in_array($field->column(), $reservedColumns);
-        });
-    }
-
-    /**
-     * Render form header tools.
-     *
-     * @return string
-     */
-    public function renderTools()
-    {
-        return $this->tools->render();
-    }
-
-    /**
-     * Render form footer.
-     *
-     * @return string
-     */
-    public function renderFooter()
-    {
-        return $this->footer->render();
+        $this->fields = $this->fields()->reject(
+            function (Field $field) use ($reservedColumns) {
+                return in_array($field->column(), $reservedColumns);
+            }
+        );
     }
 
     /**
@@ -547,7 +545,8 @@ class Builder
         $tabObj = $this->form->getTab();
 
         if (!$tabObj->isEmpty()) {
-            $script = <<<'SCRIPT'
+            $script
+                = <<<'SCRIPT'
 
 var hash = document.location.hash;
 if (hash) {
@@ -574,11 +573,28 @@ SCRIPT;
         }
 
         $data = [
-            'form'   => $this,
+            'form' => $this,
             'tabObj' => $tabObj,
-            'width'  => $this->width,
+            'width' => $this->width,
         ];
 
         return view($this->view, $data)->render();
+    }
+
+    /**
+     * @return string
+     */
+    public function renderHeaderTools()
+    {
+        $this->tools->disableListButton();
+        return $this->tools->render();
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->render();
     }
 }

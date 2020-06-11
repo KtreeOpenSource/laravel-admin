@@ -17,7 +17,7 @@ class User extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->profile['first_name']} {$this->profile['last_name']}";
+        return "{$this->profile['firstName']} {$this->profile['lastName']}";
     }
 
     public function getPositionAttribute()

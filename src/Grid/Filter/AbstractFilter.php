@@ -10,7 +10,6 @@ use Encore\Admin\Grid\Filter\Presenter\Presenter;
 use Encore\Admin\Grid\Filter\Presenter\Radio;
 use Encore\Admin\Grid\Filter\Presenter\Select;
 use Encore\Admin\Grid\Filter\Presenter\Text;
-use Illuminate\Support\Collection;
 
 /**
  * Class AbstractFilter.
@@ -49,11 +48,6 @@ abstract class AbstractFilter
     protected $value;
 
     /**
-     * @var array|string
-     */
-    protected $defaultValue;
-
-    /**
      * @var string
      */
     protected $column;
@@ -81,11 +75,6 @@ abstract class AbstractFilter
      * @var string
      */
     protected $view = 'admin::filter.where';
-
-    /**
-     * @var Collection
-     */
-    public $group;
 
     /**
      * AbstractFilter constructor.
@@ -138,17 +127,15 @@ abstract class AbstractFilter
         $columns = explode('.', $column);
 
         if (count($columns) == 1) {
-            $name = $columns[0];
-        } else {
-            $name = array_shift($columns);
-            foreach ($columns as $column) {
-                $name .= "[$column]";
-            }
+            return $columns[0];
         }
 
-        $parenName = $this->parent->getName();
+        $name = array_shift($columns);
+        foreach ($columns as $column) {
+            $name .= "[$column]";
+        }
 
-        return $parenName ? "{$parenName}_{$name}" : $name;
+        return $name;
     }
 
     /**
@@ -167,6 +154,14 @@ abstract class AbstractFilter
      * @param Filter $filter
      */
     public function setParent(Filter $filter)
+    {
+        $this->parent = $filter;
+    }
+
+    /**
+     * @param Filter $filter
+     */
+    public function setColumnsFilterParent(\Encore\Admin\Grid\ColumnFilter $filter)
     {
         $this->parent = $filter;
     }
@@ -364,22 +359,6 @@ abstract class AbstractFilter
     }
 
     /**
-     * Set default value for filter.
-     *
-     * @param null $default
-     *
-     * @return $this
-     */
-    public function default($default = null)
-    {
-        if ($default) {
-            $this->defaultValue = $default;
-        }
-
-        return $this;
-    }
-
-    /**
      * Get element id.
      *
      * @return array|string
@@ -396,9 +375,7 @@ abstract class AbstractFilter
      */
     public function getColumn()
     {
-        $parenName = $this->parent->getName();
-
-        return $parenName ? "{$parenName}_{$this->column}" : $this->column;
+        return $this->column;
     }
 
     /**
@@ -454,7 +431,7 @@ abstract class AbstractFilter
             'id'        => $this->id,
             'name'      => $this->formatName($this->column),
             'label'     => $this->label,
-            'value'     => $this->value ?: $this->defaultValue,
+            'value'     => $this->value,
             'presenter' => $this->presenter(),
         ], $this->presenter()->variables());
     }
@@ -467,6 +444,22 @@ abstract class AbstractFilter
     public function render()
     {
         return view($this->view, $this->variables());
+    }
+
+    /**
+     * Render this column filter.
+     *
+     * @return \Illuminate\View\View|string
+     */
+    public function columnFilterRender(){
+        $variables = array_merge([
+          'columnFilter' => true
+        ],$this->variables());
+
+        if($this->view == 'admin::filter.where'){
+          return view($this->presenter()->view(), $variables);
+        }
+        return view($this->view,$variables);
     }
 
     /**

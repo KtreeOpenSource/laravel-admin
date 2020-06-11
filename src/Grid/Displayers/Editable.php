@@ -23,9 +23,7 @@ class Editable extends AbstractDisplayer
      *
      * @var array
      */
-    protected $options = [
-        'emptytext'  => '<i class="fa fa-pencil"></i>',
-    ];
+    protected $options = [];
 
     /**
      * Add options for editable.
@@ -120,10 +118,10 @@ class Editable extends AbstractDisplayer
         $this->type = 'combodate';
 
         $this->addOptions([
-            'format'     => $format,
-            'viewformat' => $format,
-            'template'   => $format,
-            'combodate'  => [
+            'format'        => $format,
+            'viewformat'    => $format,
+            'template'      => $format,
+            'combodate'     => [
                 'maxYear' => 2035,
             ],
         ]);

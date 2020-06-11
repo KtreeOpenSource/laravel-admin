@@ -22,7 +22,7 @@
   <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
 </head>
-<body class="hold-transition login-page" @if(config('admin.login_background_image'))style="background: url({{config('admin.login_background_image')}}) no-repeat;background-size: cover;"@endif>
+<body class="hold-transition login-page">
 <div class="login-box">
   <div class="login-logo">
     <a href="{{ admin_base_path('/') }}"><b>{{config('admin.name')}}</b></a>
@@ -32,15 +32,15 @@
     <p class="login-box-msg">{{ trans('admin.login') }}</p>
 
     <form action="{{ admin_base_path('auth/login') }}" method="post">
-      <div class="form-group has-feedback {!! !$errors->has('username') ?: 'has-error' !!}">
+      <div class="form-group has-feedback {!! !$errors->has('userName') ?: 'has-error' !!}">
 
-        @if($errors->has('username'))
-          @foreach($errors->get('username') as $message)
+        @if($errors->has('userName'))
+          @foreach($errors->get('userName') as $message)
             <label class="control-label" for="inputError"><i class="fa fa-times-circle-o"></i>{{$message}}</label></br>
           @endforeach
         @endif
 
-        <input type="input" class="form-control" placeholder="{{ trans('admin.username') }}" name="username" value="{{ old('username') }}">
+        <input type="input" class="form-control" placeholder="{{ trans('admin.userName') }}" name="userName" value="{{ old('userName') }}">
         <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
       </div>
       <div class="form-group has-feedback {!! !$errors->has('password') ?: 'has-error' !!}">

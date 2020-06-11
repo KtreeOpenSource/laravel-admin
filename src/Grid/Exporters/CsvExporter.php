@@ -2,9 +2,7 @@
 
 namespace Encore\Admin\Grid\Exporters;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 
 class CsvExporter extends AbstractExporter
 {
@@ -13,7 +11,24 @@ class CsvExporter extends AbstractExporter
      */
     public function export()
     {
+        $titles = [];
+
         $filename = $this->getTable().'.csv';
+
+        $data = $this->getData();
+
+        if (!empty($data)) {
+            $columns = array_dot($this->sanitize($data[0]));
+
+            $titles = array_keys($columns);
+        }
+
+        $output = self::putcsv($titles);
+
+        foreach ($data as $row) {
+            $row = array_only($row, $titles);
+            $output .= self::putcsv(array_dot($row));
+        }
 
         $headers = [
             'Content-Encoding'    => 'UTF-8',
@@ -21,56 +36,44 @@ class CsvExporter extends AbstractExporter
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ];
 
-        response()->stream(function () {
-            $handle = fopen('php://output', 'w');
-
-            $titles = [];
-
-            $this->chunk(function ($records) use ($handle, &$titles) {
-                if (empty($titles)) {
-                    $titles = $this->getHeaderRowFromRecords($records);
-
-                    // Add CSV headers
-                    fputcsv($handle, $titles);
-                }
-
-                foreach ($records as $record) {
-                    fputcsv($handle, $this->getFormattedRecord($record));
-                }
-            });
-
-            // Close the output stream
-            fclose($handle);
-        }, 200, $headers)->send();
+        response(rtrim($output, "\n"), 200, $headers)->send();
 
         exit;
     }
 
     /**
-     * @param Collection $records
+     * Remove indexed array.
+     *
+     * @param array $row
      *
      * @return array
      */
-    public function getHeaderRowFromRecords(Collection $records): array
+    protected function sanitize(array $row)
     {
-        $titles = collect(array_dot($records->first()->toArray()))->keys()->map(
-            function ($key) {
-                $key = str_replace('.', ' ', $key);
-
-                return Str::ucfirst($key);
-            }
-        );
-
-        return $titles->toArray();
+        return collect($row)->reject(function ($val) {
+            return is_array($val) && !Arr::isAssoc($val);
+        })->toArray();
     }
 
     /**
-     * @param Model $record
+     * @param $row
+     * @param string $fd
+     * @param string $quot
      *
-     * @return array
+     * @return string
      */
-    public function getFormattedRecord(Model $record)
+    protected static function putcsv($row, $fd = ',', $quot = '"')
     {
-        return array_dot($record->getAttributes());
+        $str = '';
+        foreach ($row as $cell) {
+            $cell = str_replace([$quot, "\n"], [$quot.$quot, ''], $cell);
+            if (strstr($cell, $fd) !== false || strstr($cell, $quot) !== false) {
+                $str .= $quot.$cell.$quot.$fd;
+            } else {
+                $str .= $cell.$fd;
+            }
+        }
+
+        return substr($str, 0, -1)."\n";
     }
 }

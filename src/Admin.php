@@ -9,9 +9,12 @@ use Encore\Admin\Widgets\Navbar;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
+use Validator;
+use Request;
+use Encore\Admin\Auth\Database\Administrator;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Class Admin.
@@ -19,21 +22,9 @@ use InvalidArgumentException;
 class Admin
 {
     /**
-     * The Laravel admin version.
-     *
-     * @var string
-     */
-    const VERSION = '1.5.19';
-
-    /**
      * @var Navbar
      */
     protected $navbar;
-
-    /**
-     * @var string
-     */
-    public static $metaTitle;
 
     /**
      * @var array
@@ -54,26 +45,6 @@ class Admin
      * @var array
      */
     public static $extensions = [];
-
-    /**
-     * @var []Closure
-     */
-    public static $booting;
-
-    /**
-     * @var []Closure
-     */
-    public static $booted;
-
-    /**
-     * Returns the long version of Laravel-admin.
-     *
-     * @return string The long application version
-     */
-    public static function getLongVersion()
-    {
-        return sprintf('Laravel-admin <comment>version</comment> <info>%s</info>', self::VERSION);
-    }
 
     /**
      * @param $model
@@ -107,19 +78,6 @@ class Admin
     public function tree($model, Closure $callable = null)
     {
         return new Tree($this->getModel($model), $callable);
-    }
-
-    /**
-     * Build show page.
-     *
-     * @param $model
-     * @param mixed $callable
-     *
-     * @return Show
-     */
-    public function show($model, $callable = null)
-    {
-        return new Show($this->getModel($model), $callable);
     }
 
     /**
@@ -165,7 +123,9 @@ class Admin
             return;
         }
 
-        static::$css = array_merge(static::$css, (array) $css);
+        $css = array_get(Form::collectFieldAssets(), 'css', []);
+
+        static::$css = array_merge(static::$css, $css);
 
         return view('admin::partials.css', ['css' => array_unique(static::$css)]);
     }
@@ -185,7 +145,9 @@ class Admin
             return;
         }
 
-        static::$js = array_merge(static::$js, (array) $js);
+        $js = array_get(Form::collectFieldAssets(), 'js', []);
+
+        static::$js = array_merge(static::$js, $js);
 
         return view('admin::partials.js', ['js' => array_unique(static::$js)]);
     }
@@ -217,23 +179,13 @@ class Admin
     }
 
     /**
-     * Set admin title.
-     *
-     * @return void
-     */
-    public static function setTitle($title)
-    {
-        self::$metaTitle = $title;
-    }
-
-    /**
      * Get admin title.
      *
      * @return Config
      */
     public function title()
     {
-        return self::$metaTitle ? self::$metaTitle : config('admin.title');
+        return config('admin.title');
     }
 
     /**
@@ -249,9 +201,7 @@ class Admin
     /**
      * Set navbar.
      *
-     * @param Closure|null $builder
-     *
-     * @return Navbar
+     * @param Closure $builder
      */
     public function navbar(Closure $builder = null)
     {
@@ -284,9 +234,9 @@ class Admin
     public function registerAuthRoutes()
     {
         $attributes = [
-            'prefix'     => config('admin.route.prefix'),
-            'namespace'  => 'Encore\Admin\Controllers',
-            'middleware' => config('admin.route.middleware'),
+            'prefix'        => config('admin.route.prefix'),
+            'namespace'     => 'Encore\Admin\Controllers',
+            'middleware'    => config('admin.route.middleware'),
         ];
 
         Route::group($attributes, function ($router) {
@@ -310,46 +260,39 @@ class Admin
         });
     }
 
-    /**
-     * Extend a extension.
-     *
-     * @param string $name
-     * @param string $class
-     *
-     * @return void
-     */
     public static function extend($name, $class)
     {
         static::$extensions[$name] = $class;
     }
 
-    /**
-     * @param callable $callback
-     */
-    public static function booting(callable $callback)
+    public static function authAPI()
     {
-        static::$booting[] = $callback;
-    }
+        $result = array();
+        $validator = Validator::make(['X-Authorization-Token' => Request::header('X-Authorization-Token')], [
+          'X-Authorization-Token' =>'required']);
+        if ($validator->fails()) {
+            $message = $validator->errors()->all();
+            $result['apiStatus'] = 0;
+            $result['apiMessage'] = implode(', ', $message);
+            $res = response()->json($result, 200);
+            $res->send();
+            exit;
+        }
 
-    /**
-     * @param callable $callback
-     */
-    public static function booted(callable $callback)
-    {
-        static::$booted[] = $callback;
-    }
+        $senderToken = Request::header('X-Authorization-Token');
+        $senderUserName = Request::header('User-Agent');
 
-    /*
-     * Disable Pjax for current Request
-     *
-     * @return void
-     */
-    public function disablePjax()
-    {
-        $request = Request::instance();
+        $adminUser = Administrator::where('deleted', '=', null)
+                      ->where('userName', '=', $senderUserName)
+                      ->first();
 
-        if ($request->pjax()) {
-            $request->headers->set('X-PJAX', false);
+        if (!$adminUser && !Hash::check($senderToken, $adminUser->apiToken)) {
+            $result['apiStatus']   = false;
+            $result['apiMessage']  = trans('admin.tokenIsNotMatch');
+            $result['senderToken'] = $senderToken;
+            $res = response()->json($result, 200);
+            $res->send();
+            exit;
         }
     }
 }

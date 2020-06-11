@@ -12,51 +12,48 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
+use Aginev\LoginActivity\Handlers\EloquentHandler;
 
 class AuthController extends Controller
 {
     /**
-     * Show the login page.
+     * Login page.
      *
      * @return \Illuminate\Contracts\View\Factory|Redirect|\Illuminate\View\View
      */
     public function getLogin()
     {
-        if ($this->guard()->check()) {
-            return redirect($this->redirectPath());
+        if (!Auth::guard('admin')->guest()) {
+            return redirect(config('admin.route.prefix'));
         }
 
         return view('admin::login');
     }
 
     /**
-     * Handle a login request.
-     *
      * @param Request $request
      *
      * @return mixed
      */
     public function postLogin(Request $request)
     {
-        $credentials = $request->only([$this->username(), 'password']);
+        $credentials = $request->only(['userName', 'password']);
 
-        /** @var \Illuminate\Validation\Validator $validator */
         $validator = Validator::make($credentials, [
-            $this->username()   => 'required',
-            'password'          => 'required',
+            'userName' => 'required', 'password' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return back()->withInput()->withErrors($validator);
+            return Redirect::back()->withInput()->withErrors($validator);
         }
 
-        if ($this->guard()->attempt($credentials)) {
-            return $this->sendLoginResponse($request);
+        if (Auth::guard('admin')->attempt($credentials)) {
+            admin_toastr(trans('admin.login_successful'));
+
+            return redirect()->intended(config('admin.route.prefix'));
         }
 
-        return back()->withInput()->withErrors([
-            $this->username() => $this->getFailedLoginMessage(),
-        ]);
+        return Redirect::back()->withInput()->withErrors(['userName' => $this->getFailedLoginMessage()]);
     }
 
     /**
@@ -64,34 +61,29 @@ class AuthController extends Controller
      *
      * @return Redirect
      */
-    public function getLogout(Request $request)
+    public function getLogout()
     {
-        $this->guard()->logout();
-
-        $request->session()->invalidate();
-
+        /** Store user logout activity  */
+        if (isset(Admin::user()->id) && config('login-activity.track_logout')) {
+            $logout_activity = new EloquentHandler;
+            $logout_activity->createActivity(Admin::user()->id, 'logout');
+        }
+        Auth::guard('admin')->logout();
+        session()->forget('url.intented');
         return redirect(config('admin.route.prefix'));
     }
 
     /**
      * User setting page.
      *
-     * @param Content $content
-     *
-     * @return Content
+     * @return mixed
      */
-    public function getSetting(Content $content)
+    public function getSetting()
     {
-        $form = $this->settingForm();
-        $form->tools(
-            function (Form\Tools $tools) {
-                $tools->disableList();
-            }
-        );
-
-        return $content
-            ->header(trans('admin.user_setting'))
-            ->body($form->edit(Admin::user()->id));
+        return Admin::content(function (Content $content) {
+            $content->header(trans('admin.user_setting'));
+            $content->body($this->settingForm()->edit(Admin::user()->id));
+        });
     }
 
     /**
@@ -111,34 +103,32 @@ class AuthController extends Controller
      */
     protected function settingForm()
     {
-        $form = new Form(new Administrator());
+        return Administrator::form(function (Form $form) {
+            $form->display('userName', trans('admin.userName'));
+            $form->text('name', trans('admin.name'))->rules('required');
+            $form->image('avatar', trans('admin.avatar'));
+            $form->password('password', trans('admin.password'))->rules('confirmed|required');
+            $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+                ->default(function ($form) {
+                    return $form->model()->password;
+                });
 
-        $form->display('username', trans('admin.username'));
-        $form->text('name', trans('admin.name'))->rules('required');
-        $form->image('avatar', trans('admin.avatar'));
-        $form->password('password', trans('admin.password'))->rules('confirmed|required');
-        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-            ->default(function ($form) {
-                return $form->model()->password;
+            $form->setAction(admin_base_path('auth/setting'));
+
+            $form->ignore(['password_confirmation']);
+
+            $form->saving(function (Form $form) {
+                if ($form->password && $form->model()->password != $form->password) {
+                    $form->password = bcrypt($form->password);
+                }
             });
 
-        $form->setAction(admin_base_path('auth/setting'));
+            $form->saved(function () {
+                admin_toastr(trans('admin.update_succeeded'));
 
-        $form->ignore(['password_confirmation']);
-
-        $form->saving(function (Form $form) {
-            if ($form->password && $form->model()->password != $form->password) {
-                $form->password = bcrypt($form->password);
-            }
+                return redirect(admin_base_path('auth/setting'));
+            });
         });
-
-        $form->saved(function () {
-            admin_toastr(trans('admin.update_succeeded'));
-
-            return redirect(admin_base_path('auth/setting'));
-        });
-
-        return $form;
     }
 
     /**
@@ -149,55 +139,5 @@ class AuthController extends Controller
         return Lang::has('auth.failed')
             ? trans('auth.failed')
             : 'These credentials do not match our records.';
-    }
-
-    /**
-     * Get the post login redirect path.
-     *
-     * @return string
-     */
-    protected function redirectPath()
-    {
-        if (method_exists($this, 'redirectTo')) {
-            return $this->redirectTo();
-        }
-
-        return property_exists($this, 'redirectTo') ? $this->redirectTo : config('admin.route.prefix');
-    }
-
-    /**
-     * Send the response after the user was authenticated.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return \Illuminate\Http\Response
-     */
-    protected function sendLoginResponse(Request $request)
-    {
-        admin_toastr(trans('admin.login_successful'));
-
-        $request->session()->regenerate();
-
-        return redirect()->intended($this->redirectPath());
-    }
-
-    /**
-     * Get the login username to be used by the controller.
-     *
-     * @return string
-     */
-    protected function username()
-    {
-        return 'username';
-    }
-
-    /**
-     * Get the guard to be used during authentication.
-     *
-     * @return \Illuminate\Contracts\Auth\StatefulGuard
-     */
-    protected function guard()
-    {
-        return Auth::guard('admin');
     }
 }

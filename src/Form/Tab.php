@@ -23,6 +23,11 @@ class Tab
     protected $offset = 0;
 
     /**
+     * @var int
+     */
+    protected $rowOffset = 0;
+
+    /**
      * Tab constructor.
      *
      * @param Form $form
@@ -30,7 +35,6 @@ class Tab
     public function __construct(Form $form)
     {
         $this->form = $form;
-
         $this->tabs = new Collection();
     }
 
@@ -45,11 +49,13 @@ class Tab
      */
     public function append($title, \Closure $content, $active = false)
     {
-        $fields = $this->collectFields($content);
+        list($fields, $closureContent) = $this->collectFields($content);
 
-        $id = 'form-'.($this->tabs->count() + 1);
+        $rows = $this->collectRows($content);
 
-        $this->tabs->push(compact('id', 'title', 'fields', 'active'));
+        $id = 'form-' . ($this->tabs->count() + 1);
+
+        $this->tabs->push(compact('id', 'title', 'fields', 'active', 'rows', 'closureContent'));
 
         return $this;
     }
@@ -59,41 +65,30 @@ class Tab
      *
      * @param \Closure $content
      *
-     * @return Collection
+     * @return array
      */
     protected function collectFields(\Closure $content)
     {
-        call_user_func($content, $this->form);
+        $closureContent = call_user_func($content, $this->form);
 
-        $fields = clone $this->form->builder()->fields();
+        $all = $this->form->builder()->fields();
 
-        $all = $fields->toArray();
+        $fields = $all->slice($this->offset);
 
-        foreach ($this->form->rows as $row) {
-            $rowFields = array_map(function ($field) {
-                return $field['element'];
-            }, $row->getFields());
+        $this->offset = $all->count();
 
-            $match = false;
+        return [$fields, $closureContent];
+    }
 
-            foreach ($rowFields as $field) {
-                if (($index = array_search($field, $all)) !== false) {
-                    if (!$match) {
-                        $fields->put($index, $row);
-                    } else {
-                        $fields->pull($index);
-                    }
+    protected function collectRows(\Closure $content)
+    {
+        $rows = $this->form->builder()->getRows();
 
-                    $match = true;
-                }
-            }
-        }
+        $rows = array_slice($rows, $this->rowOffset, null, true);
 
-        $fields = $fields->slice($this->offset);
+        $this->rowOffset = count($rows);
 
-        $this->offset += $fields->count();
-
-        return $fields;
+        return $rows;
     }
 
     /**
@@ -104,9 +99,11 @@ class Tab
     public function getTabs()
     {
         // If there is no active tab, then active the first.
-        if ($this->tabs->filter(function ($tab) {
-            return $tab['active'];
-        })->isEmpty()) {
+        if ($this->tabs->filter(
+            function ($tab) {
+                return $tab['active'];
+            }
+        )->isEmpty()) {
             $first = $this->tabs->first();
             $first['active'] = true;
 

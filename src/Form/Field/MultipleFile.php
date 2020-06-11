@@ -61,10 +61,6 @@ class MultipleFile extends Field
             return false;
         }
 
-        if ($this->validator) {
-            return $this->validator->call($this, $input);
-        }
-
         $attributes = [];
 
         if (!$fieldRules = $this->getRules()) {
@@ -87,10 +83,6 @@ class MultipleFile extends Field
      */
     protected function hydrateFiles(array $value)
     {
-        if (empty($value)) {
-            return [[$this->column => $this->getRules()], []];
-        }
-
         $rules = $input = [];
 
         foreach ($value as $key => $file) {
@@ -208,7 +200,7 @@ class MultipleFile extends Field
         $this->setupDefaultOptions();
 
         if (!empty($this->value)) {
-            $this->options(['initialPreview' => $this->preview()]);
+            $this->options(['initialPreview' =>$this->preview()]);
             $this->setupPreviewOptions();
         }
 

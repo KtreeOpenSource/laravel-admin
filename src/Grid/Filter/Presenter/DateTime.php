@@ -14,7 +14,7 @@ class DateTime extends Presenter
     /**
      * @var string
      */
-    protected $format = 'YYYY-MM-DD HH:mm:ss';
+    protected $format = 'YYYY-MM-DD';
 
     /**
      * DateTime constructor.
@@ -35,13 +35,15 @@ class DateTime extends Presenter
     {
         $options['format'] = array_get($options, 'format', $this->format);
         $options['locale'] = array_get($options, 'locale', config('app.locale'));
-
+        $options['dateFormat'] = $options['format'];
+        unset($options['format']);
         return $options;
     }
 
     protected function prepare()
     {
-        $script = "$('#{$this->filter->getId()}').datetimepicker(".json_encode($this->options).');';
+        $script = "$('#{$this->filter->getId()}').datepicker(".
+        json_encode($this->options).");";
 
         Admin::script($script);
     }
@@ -50,8 +52,6 @@ class DateTime extends Presenter
     {
         $this->prepare();
 
-        return [
-            'group' => $this->filter->group,
-        ];
+        return [];
     }
 }

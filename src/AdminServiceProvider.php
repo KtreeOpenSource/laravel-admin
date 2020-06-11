@@ -2,8 +2,9 @@
 
 namespace Encore\Admin;
 
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
+use Carbon\Carbon;
 
 class AdminServiceProvider extends ServiceProvider
 {
@@ -11,15 +12,11 @@ class AdminServiceProvider extends ServiceProvider
      * @var array
      */
     protected $commands = [
-        Console\AdminCommand::class,
-        Console\MakeCommand::class,
-        Console\MenuCommand::class,
-        Console\InstallCommand::class,
-        Console\UninstallCommand::class,
-        Console\ImportCommand::class,
-        Console\CreateUserCommand::class,
-        Console\ResetPasswordCommand::class,
-        Console\ExtendCommand::class,
+        'Encore\Admin\Console\MakeCommand',
+        'Encore\Admin\Console\MenuCommand',
+        'Encore\Admin\Console\InstallCommand',
+        'Encore\Admin\Console\UninstallCommand',
+        'Encore\Admin\Console\ImportCommand',
     ];
 
     /**
@@ -28,11 +25,12 @@ class AdminServiceProvider extends ServiceProvider
      * @var array
      */
     protected $routeMiddleware = [
-        'admin.auth'       => Middleware\Authenticate::class,
-        'admin.pjax'       => Middleware\Pjax::class,
-        'admin.log'        => Middleware\LogOperation::class,
-        'admin.permission' => Middleware\Permission::class,
-        'admin.bootstrap'  => Middleware\Bootstrap::class,
+        'admin.auth'        => \Encore\Admin\Middleware\Authenticate::class,
+        'admin.pjax'        => \Encore\Admin\Middleware\Pjax::class,
+        'admin.log'         => \Encore\Admin\Middleware\LogOperation::class,
+        'admin.permission'  => \Encore\Admin\Middleware\Permission::class,
+        'admin.bootstrap'   => \Encore\Admin\Middleware\Bootstrap::class,
+        'admin.auth.api'    => \Encore\Admin\Middleware\AuthAPI::class
     ];
 
     /**
@@ -42,11 +40,11 @@ class AdminServiceProvider extends ServiceProvider
      */
     protected $middlewareGroups = [
         'admin' => [
-            'admin.auth',
+          //  'admin.auth',
             'admin.pjax',
             'admin.log',
             'admin.bootstrap',
-            'admin.permission',
+            //'admin.permission',
         ],
     ];
 
@@ -58,11 +56,6 @@ class AdminServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
-
-        if (config('admin.https') || config('admin.secure')) {
-            \URL::forceScheme('https');
-            $this->app['request']->server->set('HTTPS', true);
-        }
 
         if (file_exists($routes = admin_path('routes.php'))) {
             $this->loadRoutesFrom($routes);
@@ -76,11 +69,7 @@ class AdminServiceProvider extends ServiceProvider
             $this->publishes([__DIR__.'/../resources/assets' => public_path('vendor/laravel-admin')], 'laravel-admin-assets');
         }
 
-        //remove default feature of double encoding enable in laravel 5.6 or later.
-        $bladeReflectionClass = new \ReflectionClass('\Illuminate\View\Compilers\BladeCompiler');
-        if ($bladeReflectionClass->hasMethod('withoutDoubleEncoding')) {
-            Blade::withoutDoubleEncoding();
-        }
+        Passport::routes();
     }
 
     /**

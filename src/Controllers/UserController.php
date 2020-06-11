@@ -5,43 +5,27 @@ namespace Encore\Admin\Controllers;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Auth\Database\Permission;
 use Encore\Admin\Auth\Database\Role;
+use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Layout\Content;
-use Encore\Admin\Show;
 use Illuminate\Routing\Controller;
+use Request;
 
 class UserController extends Controller
 {
-    use HasResourceActions;
-
+    use ModelForm;
     /**
      * Index interface.
      *
      * @return Content
      */
-    public function index(Content $content)
-    {
-        return $content
-            ->header(trans('admin.administrator'))
-            ->description(trans('admin.list'))
-            ->body($this->grid()->render());
-    }
-
-    /**
-     * Show interface.
-     *
-     * @param mixed   $id
-     * @param Content $content
-     *
-     * @return Content
-     */
-    public function show($id, Content $content)
-    {
-        return $content
-            ->header(trans('admin.administrator'))
-            ->description(trans('admin.detail'))
-            ->body($this->detail($id));
+    public function index()
+    { 
+        return Admin::content(function (Content $content) {
+            $content->header('User Details');
+            $content->body($this->grid()->render());
+        });
     }
 
     /**
@@ -51,12 +35,12 @@ class UserController extends Controller
      *
      * @return Content
      */
-    public function edit($id, Content $content)
+    public function edit($id)
     {
-        return $content
-            ->header(trans('admin.administrator'))
-            ->description(trans('admin.edit'))
-            ->body($this->form()->edit($id));
+        return Admin::content(function (Content $content) use ($id) {
+            $content->header('User Details');
+            $content->body($this->form()->edit($id));
+        });
     }
 
     /**
@@ -64,12 +48,12 @@ class UserController extends Controller
      *
      * @return Content
      */
-    public function create(Content $content)
+    public function create()
     {
-        return $content
-            ->header(trans('admin.administrator'))
-            ->description(trans('admin.create'))
-            ->body($this->form());
+        return Admin::content(function (Content $content) {
+            $content->header('User Details');
+            $content->body($this->form());
+        });
     }
 
     /**
@@ -79,54 +63,54 @@ class UserController extends Controller
      */
     protected function grid()
     {
-        $grid = new Grid(new Administrator());
+        return Administrator::grid(function (Grid $grid) {
+            $grid->id(trans('admin.id'))->sortable()->renderFilter(function ($filter) {
+                $filter->equal('id', 'id');
+            });
+            $grid->userName(trans('admin.userName'))->sortable()->renderFilter(function ($filter) {
+                $filter->like('userName', trans('admin.userName'));
+            });
+            $grid->firstName(trans('admin.firstName'))->sortable()->renderFilter(function ($filter) {
+                $filter->like('firstName', trans('admin.firstName'));
+            });
+            $grid->roles(trans('admin.roles'))->pluck('name')->label()->renderFilter(function ($filter) {
+                $filter->equal('roles.id', trans('admin.roles'))->select(Role::pluck('name', 'id')->toArray());
+            });
 
-        $grid->id('ID')->sortable();
-        $grid->username(trans('admin.username'));
-        $grid->name(trans('admin.name'));
-        $grid->roles(trans('admin.roles'))->pluck('name')->label();
-        $grid->created_at(trans('admin.created_at'));
-        $grid->updated_at(trans('admin.updated_at'));
+            $grid->statusId(trans('admin.statusId'))->select(Administrator::getStatus())
+            ->sortable()->renderFilter(function ($filter) {
+                $filter->equal('statusId', trans('admin.statusId'))->select(Administrator::getStatus());
+            });
 
-        $grid->actions(function (Grid\Displayers\Actions $actions) {
-            if ($actions->getKey() == 1) {
-                $actions->disableDelete();
-            }
-        });
+            $grid->createdAt(trans('admin.createdAt'))->sortable()->renderFilter(function ($filter) {
+                $filter->date('createdAt', trans('admin.createdAt'));
+            });
+            $grid->updatedAt(trans('admin.updatedAt'))->sortable()->renderFilter(function ($filter) {
+                $filter->date('updatedAt', trans('admin.updatedAt'));
+            });
 
-        $grid->tools(function (Grid\Tools $tools) {
-            $tools->batch(function (Grid\Tools\BatchActions $actions) {
-                $actions->disableDelete();
+
+            $grid->filter(function ($filter) {
+                $filter->like('userName', trans('admin.userName'));
+                $filter->like('firstName', trans('admin.firstName'));
+                $filter->equal('statusId', trans('admin.statusId'))->select(Administrator::getStatus());
+                $filter->equal('roles.id', trans('admin.roles'))->select(Role::pluck('name', 'id')->toArray());
+                $filter->date('createdAt', trans('admin.createdAt'));
+                $filter->date('updatedAt', trans('admin.updatedAt'));
+            });
+
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                if ($actions->getKey() == 1) {
+                    $actions->disableDelete();
+                }
+            });
+
+            $grid->tools(function (Grid\Tools $tools) {
+                $tools->batch(function (Grid\Tools\BatchActions $actions) {
+                    $actions->disableDelete();
+                });
             });
         });
-
-        return $grid;
-    }
-
-    /**
-     * Make a show builder.
-     *
-     * @param mixed $id
-     *
-     * @return Show
-     */
-    protected function detail($id)
-    {
-        $show = new Show(Administrator::findOrFail($id));
-
-        $show->id('ID');
-        $show->username(trans('admin.username'));
-        $show->name(trans('admin.name'));
-        $show->roles(trans('admin.roles'))->as(function ($roles) {
-            return $roles->pluck('name');
-        })->label();
-        $show->permissions(trans('admin.permissions'))->as(function ($permission) {
-            return $permission->pluck('name');
-        })->label();
-        $show->created_at(trans('admin.created_at'));
-        $show->updated_at(trans('admin.updated_at'));
-
-        return $show;
     }
 
     /**
@@ -136,33 +120,71 @@ class UserController extends Controller
      */
     public function form()
     {
-        $form = new Form(new Administrator());
+        $id = Request::route('user');
+        $adminUsersTable = config('admin.database.users_table');
 
-        $form->display('id', 'ID');
-
-        $form->text('username', trans('admin.username'))->rules('required');
-        $form->text('name', trans('admin.name'))->rules('required');
-        $form->image('avatar', trans('admin.avatar'));
-        $form->password('password', trans('admin.password'))->rules('required|confirmed');
-        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-            ->default(function ($form) {
-                return $form->model()->password;
+        return Administrator::form(function (Form $form) use ($id, $adminUsersTable) {
+            $form->row(function ($row) use ($id, $adminUsersTable) {
+                $row->width(6);
+                $row->text('userName', trans('admin.userName'))
+                ->rules("required|unique:".$adminUsersTable.",userName,".$id);
+                $row->email('email', trans('admin.email'))
+                ->rules('required|email|unique:'.$adminUsersTable.',email,'.$id);
             });
-
-        $form->ignore(['password_confirmation']);
-
-        $form->multipleSelect('roles', trans('admin.roles'))->options(Role::all()->pluck('name', 'id'));
-        $form->multipleSelect('permissions', trans('admin.permissions'))->options(Permission::all()->pluck('name', 'id'));
-
-        $form->display('created_at', trans('admin.created_at'));
-        $form->display('updated_at', trans('admin.updated_at'));
-
-        $form->saving(function (Form $form) {
-            if ($form->password && $form->model()->password != $form->password) {
-                $form->password = bcrypt($form->password);
+            $form->row(function ($row) {
+                $row->width(6);
+                $row->text('firstName', trans('admin.firstName'))->rules('required');
+                $row->text('lastName', trans('admin.lastName'));
+            });
+            $form->row(function ($row) {
+                $row->width(6);
+                $row->text('phoneNumber', trans('admin.phoneNumber'))
+                ->rules('required|regex:/^[\+0-9\-\(\)\s]*$/|min:7|max:14');
+                $row->image('avatar', trans('admin.avatar'));
+            });
+            $form->row(function ($row) use ($form) {
+                $row->width(6);
+                $row->password('password', trans('admin.password'))->rules('required|confirmed');
+                $row->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+                ->default(function ($form) {
+                      return $form->model()->password;
+                });
+            });
+            $form->ignore(['password_confirmation']);
+            $form->row(function ($row) {
+                $row->width(6);
+                $row->textarea('address', trans('admin.address'));
+                $row->text('country', trans('admin.country'));
+            });
+            $form->row(function ($row) {
+                $row->width(6);
+                $row->display('currencyCode', trans('admin.currencyCode'))->default(Administrator::CURRENCY_CODE);
+                $row->display('languageId', trans('admin.languageId'))->default(Administrator::LANGUAGE_ID);
+            });
+            $form->row(function ($row) {
+                $row->width(6);
+                $row->select('statusId', trans('admin.statusId'))->options(Administrator::getStatus())->default('1');
+                $row->multipleSelect('roles', trans('admin.roles'))->options(Role::all()->pluck('name', 'id'));
+            });
+            $form->row(function ($row) use ($id) {
+                $row->width(6);
+                $row->multipleSelect('permissions', trans('admin.permissions'))
+                ->options(Permission::all()->pluck('name', 'id'));
+                if ($id) {
+                    $row->display('createdAt', trans('admin.createdAt'));
+                }
+            });
+            if ($id) {
+                $form->row(function ($row) {
+                    $row->width(6);
+                    $row->display('updatedAt', trans('admin.updatedAt'));
+                });
             }
+            $form->saving(function (Form $form) {
+                if ($form->password && $form->model()->password != $form->password) {
+                    $form->password = bcrypt($form->password);
+                }
+            });
         });
-
-        return $form;
     }
 }

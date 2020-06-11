@@ -5,6 +5,7 @@ namespace Encore\Admin\Widgets;
 use Encore\Admin\Form\Field;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Renderable;
+use Encore\Admin\Admin;
 
 /**
  * Class Form.
@@ -62,13 +63,6 @@ class Form implements Renderable
      * @var array
      */
     protected $attributes = [];
-
-    /**
-     * Available buttons.
-     *
-     * @var array
-     */
-    protected $buttons = ['reset', 'submit'];
 
     /**
      * Form constructor.
@@ -160,27 +154,35 @@ class Form implements Renderable
     }
 
     /**
-     * Disable reset button.
-     *
-     * @return $this
-     */
-    public function disableReset()
-    {
-        array_delete($this->buttons, 'reset');
-
-        return $this;
-    }
-
-    /**
-     * Disable submit button.
+     * Disable form submit.
      *
      * @return $this
      */
     public function disableSubmit()
     {
-        array_delete($this->buttons, 'submit');
+        $script = <<<'SCRIPT'
+        $(function() {
+            $('button[type="submit"]').hide();
+        });
+SCRIPT;
+        Admin::script($script);
+        return $script;
+    }
 
-        return $this;
+    /**
+     * Disable form reset.
+     *
+     * @return $this
+     */
+    public function disableReset()
+    {
+        $script = <<<'SCRIPT'
+        $(function() {
+            $('button[type="reset"]').hide();
+        });
+SCRIPT;
+        Admin::script($script);
+        return $script;
     }
 
     /**
@@ -245,10 +247,8 @@ class Form implements Renderable
         }
 
         return [
-            'fields'     => $this->fields,
-            'attributes' => $this->formatAttribute(),
-            'method'     => $this->attributes['method'],
-            'buttons'    => $this->buttons,
+            'fields'        => $this->fields,
+            'attributes'    => $this->formatAttribute(),
         ];
     }
 

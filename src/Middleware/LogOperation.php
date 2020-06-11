@@ -22,7 +22,7 @@ class LogOperation
         if ($this->shouldLogOperation($request)) {
             $log = [
                 'user_id' => Admin::user()->id,
-                'path'    => substr($request->path(), 0, 255),
+                'path'    => $request->path(),
                 'method'  => $request->method(),
                 'ip'      => $request->getClientIp(),
                 'input'   => json_encode($request->input()),
@@ -70,7 +70,7 @@ class LogOperation
             $methods = array_map('strtoupper', $methods);
 
             if ($request->is($except) &&
-                (empty($methods) || in_array($request->method(), $methods))) {
+                (empty($method) || in_array($request->method(), $methods))) {
                 return true;
             }
         }

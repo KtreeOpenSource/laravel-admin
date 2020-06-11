@@ -7,6 +7,12 @@
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
+    @foreach($cssFiles as $css)
+        <link media="all" type="text/css" rel="stylesheet" href="{{ URL::asset($css) }}">
+    @endforeach
+
+    <link media="all" type="text/css" rel="stylesheet" href="{{ mix('css/app.css') }}">
+
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/AdminLTE/bootstrap/css/bootstrap.min.css") }}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/font-awesome/css/font-awesome.min.css") }}">
@@ -15,9 +21,10 @@
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/AdminLTE/dist/css/skins/" . config('admin.skin') .".min.css") }}">
 
     {!! Admin::css() !!}
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/jquery-ui/jquery-ui.min.css") }}">
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/laravel-admin/laravel-admin.css") }}">
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/nprogress/nprogress.css") }}">
-    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/sweetalert2/dist/sweetalert2.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/sweetalert/dist/sweetalert.css") }}">
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/nestable/nestable.css") }}">
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/toastr/build/toastr.min.css") }}">
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/bootstrap3-editable/css/bootstrap-editable.css") }}">
@@ -36,14 +43,17 @@
     <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-
+    @section('styles')
+    @show
+    @stack('css-stack')
+    @stack('translation-stack')
 </head>
 
 <body class="hold-transition {{config('admin.skin')}} {{join(' ', config('admin.layout'))}}">
 <div class="wrapper">
 
     @include('admin::partials.header')
-
+    @yield('content-header')
     @include('admin::partials.sidebar')
 
     <div class="content-wrapper" id="pjax-container">
@@ -62,13 +72,31 @@
     LA.token = "{{ csrf_token() }}";
 </script>
 
+@foreach($jsFiles as $js)
+    <script src="{{ URL::asset($js) }}" type="text/javascript"></script>
+@endforeach
+
 <!-- REQUIRED JS SCRIPTS -->
 <script src="{{ admin_asset ("/vendor/laravel-admin/nestable/jquery.nestable.js") }}"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/toastr/build/toastr.min.js") }}"></script>
+<script src="{{ asset ("/vendor/laravel-admin/toastr/build/toastr.min.js") }}"></script>
 <script src="{{ admin_asset ("/vendor/laravel-admin/bootstrap3-editable/js/bootstrap-editable.min.js") }}"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/sweetalert2/dist/sweetalert2.min.js") }}"></script>
+<script src="{{ admin_asset ("/vendor/laravel-admin/sweetalert/dist/sweetalert.min.js") }}"></script>
 {!! Admin::js() !!}
 <script src="{{ admin_asset ("/vendor/laravel-admin/laravel-admin/laravel-admin.js") }}"></script>
-
+<script>
+  $(function () {
+      $('.btn-logout').click(function()
+      {
+          localStorage.removeItem('activeTab');
+      });
+      window.onbeforeunload = function()
+      {
+          localStorage.removeItem('activeTab');
+      };
+  });
+</script>
+@section('scripts')
+@show
+@stack('js-stack')
 </body>
 </html>

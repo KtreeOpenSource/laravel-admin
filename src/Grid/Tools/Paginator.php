@@ -90,8 +90,16 @@ class Paginator extends AbstractTool
             return '';
         }
 
-        return $this->paginationRanger().
-            $this->paginationLinks().
+        return $this->paginationLinks().
             $this->perPageSelector();
+    }
+
+    /**
+     * Render Pagination Range.
+     *
+     * @return string
+     */
+    public function renderPaginationRange(){
+      return $this->paginationRanger();
     }
 }

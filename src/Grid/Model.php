@@ -2,19 +2,15 @@
 
 namespace Encore\Admin\Grid;
 
-use Encore\Admin\Grid;
 use Encore\Admin\Middleware\Pjax;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Str;
 
 class Model
 {
@@ -80,21 +76,6 @@ class Model
     protected $collectionCallback;
 
     /**
-     * @var Grid
-     */
-    protected $grid;
-
-    /**
-     * @var Relation
-     */
-    protected $relation;
-
-    /**
-     * @var array
-     */
-    protected $eagerLoads = [];
-
-    /**
      * Create a new grid model instance.
      *
      * @param EloquentModel $model
@@ -105,7 +86,7 @@ class Model
 
         $this->queries = collect();
 
-//        static::doNotSnakeAttributes($this->model);
+        static::doNotSnakeAttributes($this->model);
     }
 
     /**
@@ -191,66 +172,6 @@ class Model
     }
 
     /**
-     * Set parent grid instance.
-     *
-     * @param Grid $grid
-     *
-     * @return $this
-     */
-    public function setGrid(Grid $grid)
-    {
-        $this->grid = $grid;
-
-        return $this;
-    }
-
-    /**
-     * Get parent gird instance.
-     *
-     * @return Grid
-     */
-    public function getGrid()
-    {
-        return $this->grid;
-    }
-
-    /**
-     * @param Relation $relation
-     *
-     * @return $this
-     */
-    public function setRelation(Relation $relation)
-    {
-        $this->relation = $relation;
-
-        return $this;
-    }
-
-    /**
-     * @return Relation
-     */
-    public function getRelation()
-    {
-        return $this->relation;
-    }
-
-    /**
-     * Get constraints.
-     *
-     * @return array|bool
-     */
-    public function getConstraints()
-    {
-        if ($this->relation instanceof HasMany) {
-            return [
-                $this->relation->getForeignKeyName() => $this->relation->getParentKey(),
-            ];
-        }
-
-        return false;
-    }
-
-    /**
      * Set collection callback.
      *
      * @param \Closure $callback
@@ -267,11 +188,9 @@ class Model
     /**
      * Build.
      *
-     * @param bool $toArray
-     *
-     * @return array|Collection|mixed
+     * @return array
      */
-    public function buildData($toArray = true)
+    public function buildData()
     {
         if (empty($this->data)) {
             $collection = $this->get();
@@ -280,37 +199,10 @@ class Model
                 $collection = call_user_func($this->collectionCallback, $collection);
             }
 
-            if ($toArray) {
-                $this->data = $collection->toArray();
-            } else {
-                $this->data = $collection;
-            }
+            $this->data = $collection->toArray();
         }
 
         return $this->data;
-    }
-
-    /**
-     * @param callable $callback
-     * @param int      $count
-     *
-     * @return bool
-     */
-    public function chunk($callback, $count = 100)
-    {
-        if ($this->usePaginate) {
-            return $this->buildData(false)->chunk($count)->each($callback);
-        }
-
-        $this->setSort();
-
-        $this->queries->reject(function ($query) {
-            return $query['method'] == 'paginate';
-        })->each(function ($query) {
-            $this->model = $this->model->{$query['method']}(...$query['arguments']);
-        });
-
-        return $this->model->chunk($count, $callback);
     }
 
     /**
@@ -348,10 +240,6 @@ class Model
     {
         if ($this->model instanceof LengthAwarePaginator) {
             return $this->model;
-        }
-
-        if ($this->relation) {
-            $this->model = $this->relation->getQuery();
         }
 
         $this->setSort();
@@ -443,10 +331,6 @@ class Model
             return $paginate['arguments'];
         }
 
-        if ($name = $this->grid->getName()) {
-            return [$this->perPage, null, "{$name}_page"];
-        }
-
         return [$this->perPage];
     }
 
@@ -533,7 +417,7 @@ class Model
     public function resetOrderBy()
     {
         $this->queries = $this->queries->reject(function ($query) {
-            return $query['method'] == 'orderBy' || $query['method'] == 'orderByDesc';
+            return $query['method'] == 'orderBy';
         });
     }
 
@@ -587,42 +471,6 @@ class Model
         ]);
 
         return $this;
-    }
-
-    /**
-     * Set the relationships that should be eager loaded.
-     *
-     * @param mixed $relations
-     *
-     * @return $this|Model
-     */
-    public function with($relations)
-    {
-        if (is_array($relations)) {
-            if (Arr::isAssoc($relations)) {
-                $relations = array_keys($relations);
-            }
-
-            $this->eagerLoads = array_merge($this->eagerLoads, $relations);
-        }
-
-        if (is_string($relations)) {
-            if (Str::contains($relations, '.')) {
-                $relations = explode('.', $relations)[0];
-            }
-
-            if (Str::contains($relations, ':')) {
-                $relations = explode(':', $relations)[0];
-            }
-
-            if (in_array($relations, $this->eagerLoads)) {
-                return $this;
-            }
-
-            $this->eagerLoads[] = $relations;
-        }
-
-        return $this->__call('with', (array) $relations);
     }
 
     /**

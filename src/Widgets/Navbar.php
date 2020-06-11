@@ -4,82 +4,36 @@ namespace Encore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Collection;
 
 class Navbar implements Renderable
 {
-    /**
-     * @var array
-     */
-    protected $elements = [];
+    protected $items;
 
-    /**
-     * Navbar constructor.
-     */
     public function __construct()
     {
-        $this->elements = [
-            'left'  => collect(),
-            'right' => collect(),
-        ];
+        $this->items = new Collection();
     }
 
-    /**
-     * @param $element
-     *
-     * @return $this
-     */
-    public function left($element)
+    public function add($item)
     {
-        $this->elements['left']->push($element);
+        $this->items->push($item);
 
         return $this;
     }
 
-    /**
-     * @param $element
-     *
-     * @return $this
-     */
-    public function right($element)
+    public function render()
     {
-        $this->elements['right']->push($element);
-
-        return $this;
-    }
-
-    /**
-     * @param $element
-     *
-     * @return Navbar
-     *
-     * @deprecated
-     */
-    public function add($element)
-    {
-        return $this->right($element);
-    }
-
-    /**
-     * @param string $part
-     *
-     * @return mixed
-     */
-    public function render($part = 'right')
-    {
-        if (!isset($this->elements[$part]) || $this->elements[$part]->isEmpty()) {
-            return '';
-        }
-
-        return $this->elements[$part]->map(function ($element) {
-            if ($element instanceof Htmlable) {
-                return $element->toHtml();
+        return $this->items->reverse()->map(function ($item) {
+            if ($item instanceof Htmlable) {
+                return $item->toHtml();
             }
 
-            if ($element instanceof Renderable) {
-                return $element->render();
+            if ($item instanceof Renderable) {
+                return $item->render();
             }
 
-            return (string) $element;
+            return (string) $item;
         })->implode('');
     }
 }

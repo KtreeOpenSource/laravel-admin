@@ -120,16 +120,6 @@ class NestedForm
     }
 
     /**
-     * Get form.
-     *
-     * @return Form
-     */
-    public function getForm()
-    {
-        return $this->form;
-    }
-
-    /**
      * Set original values for fields.
      *
      * @param array  $data
@@ -337,7 +327,7 @@ class NestedForm
     {
         $column = $field->column();
 
-        $elementName = $elementClass = $errorKey = [];
+        $elementName = $elementClass = $errorKey = '';
 
         $key = $this->key ?: 'new_'.static::DEFAULT_KEY_NAME;
 

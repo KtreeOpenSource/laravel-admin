@@ -32,7 +32,7 @@ class RolesTest extends TestCase
     public function testAddRoleToUser()
     {
         $user = [
-            'username'              => 'Test',
+            'userName'              => 'Test',
             'name'                  => 'Name',
             'password'              => '123456',
             'password_confirmation' => '123456',
@@ -43,7 +43,7 @@ class RolesTest extends TestCase
             ->see('Create')
             ->submitForm('Submit', $user)
             ->seePageIs('admin/auth/users')
-            ->seeInDatabase(config('admin.database.users_table'), ['username' => 'Test']);
+            ->seeInDatabase(config('admin.database.users_table'), ['userName' => 'Test']);
 
         $this->assertEquals(1, Role::count());
 

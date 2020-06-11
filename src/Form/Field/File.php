@@ -61,10 +61,6 @@ class File extends Field
             return false;
         }
 
-        if ($this->validator) {
-            return $this->validator->call($this, $input);
-        }
-
         /*
          * If has original value, means the form is in edit mode,
          * then remove required rule from rules.
@@ -167,15 +163,15 @@ class File extends Field
      */
     public function render()
     {
-        $this->options(['overwriteInitial' => true]);
         $this->setupDefaultOptions();
 
         if (!empty($this->value)) {
-            $this->attribute('data-initial-preview', filter_var($this->preview(), FILTER_VALIDATE_URL));
-            $this->attribute('data-initial-caption', $this->initialCaption($this->value));
+            $this->attribute('data-initial-preview', $this->preview());
 
             $this->setupPreviewOptions();
         }
+
+        $this->options(['overwriteInitial' => true]);
 
         $options = json_encode($this->options);
 

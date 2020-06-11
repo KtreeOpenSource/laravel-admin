@@ -17,7 +17,7 @@ class UserGridTest extends TestCase
     {
         $this->visit('admin/users')
             ->see('All users')
-            ->seeInElement('tr th', 'Username')
+            ->seeInElement('tr th', 'UserName')
             ->seeInElement('tr th', 'Email')
             ->seeInElement('tr th', 'Mobile')
             ->seeInElement('tr th', 'Full name')
@@ -36,7 +36,7 @@ class UserGridTest extends TestCase
 
         $this->seeElement("form[action='$action'][method=get]")
             ->seeElement("form[action='$action'][method=get] input[name=id]")
-            ->seeElement("form[action='$action'][method=get] input[name=username]")
+            ->seeElement("form[action='$action'][method=get] input[name=userName]")
             ->seeElement("form[action='$action'][method=get] input[name=email]")
             ->seeElement("form[action='$action'][method=get] input[name='profile[start_at][start]']")
             ->seeElement("form[action='$action'][method=get] input[name='profile[start_at][end]']")
@@ -103,11 +103,11 @@ class UserGridTest extends TestCase
         $user = UserModel::find($id);
 
         $this->visit('admin/users?id='.$id)
-            ->seeInElement('td', $user->username)
+            ->seeInElement('td', $user->userName)
             ->seeInElement('td', $user->email)
             ->seeInElement('td', $user->mobile)
             ->seeElement("img[src='{$user->avatar}']")
-            ->seeInElement('td', "{$user->profile->first_name} {$user->profile->last_name}")
+            ->seeInElement('td', "{$user->profile->firstName} {$user->profile->lastName}")
             ->seeInElement('td', $user->postcode)
             ->seeInElement('td', $user->address)
             ->seeInElement('td', "{$user->profile->latitude} {$user->profile->longitude}")
@@ -126,14 +126,14 @@ class UserGridTest extends TestCase
         $this->assertCount(50, UserModel::all());
         $this->assertCount(50, ProfileModel::all());
 
-        $users = UserModel::where('username', 'like', '%mi%')->get();
+        $users = UserModel::where('userName', 'like', '%mi%')->get();
 
-        $this->visit('admin/users?username=mi');
+        $this->visit('admin/users?userName=mi');
 
         $this->assertCount($this->crawler()->filter('table tr')->count() - 1, $users);
 
         foreach ($users as $user) {
-            $this->seeInElement('td', $user->username);
+            $this->seeInElement('td', $user->userName);
         }
     }
 
@@ -144,11 +144,11 @@ class UserGridTest extends TestCase
         $user = UserModel::with('profile')->find(rand(1, 50));
 
         $this->visit('admin/users?email='.$user->email)
-            ->seeInElement('td', $user->username)
+            ->seeInElement('td', $user->userName)
             ->seeInElement('td', $user->email)
             ->seeInElement('td', $user->mobile)
             ->seeElement("img[src='{$user->avatar}']")
-            ->seeInElement('td', "{$user->profile->first_name} {$user->profile->last_name}")
+            ->seeInElement('td', "{$user->profile->firstName} {$user->profile->lastName}")
             ->seeInElement('td', $user->postcode)
             ->seeInElement('td', $user->address)
             ->seeInElement('td', "{$user->profile->latitude} {$user->profile->longitude}")
@@ -166,7 +166,7 @@ class UserGridTest extends TestCase
         $this->visit('admin/users')
             ->seeInElement('th', 'Column1 not in table')
             ->seeInElement('th', 'Column2 not in table')
-            ->seeInElement('td', "full name:{$user->profile->first_name} {$user->profile->last_name}")
+            ->seeInElement('td', "full name:{$user->profile->firstName} {$user->profile->lastName}")
             ->seeInElement('td', "{$user->email}#{$user->profile->color}");
     }
 

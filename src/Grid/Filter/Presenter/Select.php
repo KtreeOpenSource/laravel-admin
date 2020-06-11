@@ -4,8 +4,6 @@ namespace Encore\Admin\Grid\Filter\Presenter;
 
 use Encore\Admin\Facades\Admin;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
 class Select extends Presenter
 {
@@ -15,16 +13,6 @@ class Select extends Presenter
      * @var array
      */
     protected $options = [];
-
-    /**
-     * @var array
-     */
-    protected $config = [];
-
-    /**
-     * @var string
-     */
-    protected $script = '';
 
     /**
      * Select constructor.
@@ -37,23 +25,6 @@ class Select extends Presenter
     }
 
     /**
-     * Set config for select2.
-     *
-     * all configurations see https://select2.org/configuration/options-api
-     *
-     * @param string $key
-     * @param mixed  $val
-     *
-     * @return $this
-     */
-    public function config($key, $val)
-    {
-        $this->config[$key] = $val;
-
-        return $this;
-    }
-
-    /**
      * Build options.
      *
      * @return array
@@ -61,7 +32,9 @@ class Select extends Presenter
     protected function buildOptions() : array
     {
         if (is_string($this->options)) {
-            $this->loadRemoteOptions($this->options);
+            $this->loadAjaxOptions($this->options);
+
+            return [];
         }
 
         if ($this->options instanceof \Closure) {
@@ -72,109 +45,35 @@ class Select extends Presenter
             $this->options = $this->options->toArray();
         }
 
-        if (empty($this->script)) {
-            $placeholder = trans('admin.choose');
+        $placeholder = trans('admin.choose');
 
-            $this->script = <<<SCRIPT
+        $script = <<<SCRIPT
 $(".{$this->getElementClass()}").select2({
   placeholder: "$placeholder"
 });
 
 SCRIPT;
-        }
 
-        Admin::script($this->script);
+        Admin::script($script);
 
-        return is_array($this->options) ? $this->options : [];
-    }
+        $options = is_array($this->options) ? $this->options : [];
 
-    /**
-     * Load options from current selected resource(s).
-     *
-     * @param string $model
-     * @param string $idField
-     * @param string $textField
-     *
-     * @return $this
-     */
-    public function model($model, $idField = 'id', $textField = 'name')
-    {
-        if (!class_exists($model)
-            || !in_array(Model::class, class_parents($model))
-        ) {
-            throw new \InvalidArgumentException("[$model] must be a valid model class");
-        }
-
-        $this->options = function ($value) use ($model, $idField, $textField) {
-            if (empty($value)) {
-                return [];
-            }
-
-            $resources = [];
-
-            if (is_array($value)) {
-                if (Arr::isAssoc($value)) {
-                    $resources[] = array_get($value, $idField);
-                } else {
-                    $resources = array_column($value, $idField);
-                }
-            } else {
-                $resources[] = $value;
-            }
-
-            return $model::find($resources)->pluck($textField, $idField)->toArray();
-        };
-
-        return $this;
-    }
-
-    /**
-     * Load options from remote.
-     *
-     * @param string $url
-     * @param array  $parameters
-     * @param array  $options
-     *
-     * @return $this
-     */
-    protected function loadRemoteOptions($url, $parameters = [], $options = [])
-    {
-        $ajaxOptions = [
-            'url' => $url.'?'.http_build_query($parameters),
-        ];
-
-        $ajaxOptions = json_encode(array_merge($ajaxOptions, $options));
-
-        $this->script = <<<EOT
-
-$.ajax($ajaxOptions).done(function(data) {
-  $(".{$this->getElementClass()}").select2({data: data});
-});
-
-EOT;
+        return $options;
     }
 
     /**
      * Load options from ajax.
      *
      * @param string $resourceUrl
-     * @param $idField
-     * @param $textField
      */
-    public function ajax($resourceUrl, $idField = 'id', $textField = 'text')
+    protected function loadAjaxOptions($resourceUrl)
     {
-        $configs = array_merge([
-            'allowClear'         => true,
-            'placeholder'        => trans('admin.choose'),
-            'minimumInputLength' => 1,
-        ], $this->config);
+        $placeholder = trans('admin.choose');
 
-        $configs = json_encode($configs);
-        $configs = substr($configs, 1, strlen($configs) - 2);
-
-        $this->script = <<<EOT
+        $script = <<<EOT
 
 $(".{$this->getElementClass()}").select2({
+  placeholder: "$placeholder",
   ajax: {
     url: "$resourceUrl",
     dataType: 'json',
@@ -189,11 +88,7 @@ $(".{$this->getElementClass()}").select2({
       params.page = params.page || 1;
 
       return {
-        results: $.map(data.data, function (d) {
-                   d.id = d.$idField;
-                   d.text = d.$textField;
-                   return d;
-                }),
+        results: data.data,
         pagination: {
           more: data.next_page_url
         }
@@ -201,13 +96,15 @@ $(".{$this->getElementClass()}").select2({
     },
     cache: true
   },
-  $configs,
+  minimumInputLength: 1,
   escapeMarkup: function (markup) {
       return markup;
   }
 });
 
 EOT;
+
+        Admin::script($script);
     }
 
     /**
@@ -239,7 +136,7 @@ EOT;
      *
      * @return $this
      */
-    public function load($target, $resourceUrl, $idField = 'id', $textField = 'text') : self
+    public function load($target, $resourceUrl, $idField = 'id', $textField = 'text') : Select
     {
         $column = $this->filter->getColumn();
 
