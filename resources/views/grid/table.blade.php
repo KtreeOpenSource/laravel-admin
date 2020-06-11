@@ -1,71 +1,69 @@
-<div class="box grid-box">
-    @if(isset($title))
-    <div class="box-header with-border">
-        <h3 class="box-title"> {{ $title }}</h3>
-    </div>
+<div class="admin-grid">
+    @if(session()->has('message.level'))
+      <div class="alert alert-{{ session('message.level') }}">
+      <?php $spanClass = (session('message.level') == 'danger') ? 'glyphicon glyphicon-ban-circle' : 'glyphicon glyphicon-ok';?>
+      <span class="{{$spanClass}}"></span>
+      {!! session('message.content') !!}
+      <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+      </div>
     @endif
 
-    @if ( $grid->showTools() || $grid->showExportBtn() || $grid->showCreateBtn() )
-    <div class="box-header with-border">
-        <div class="pull-right">
-            {!! $grid->renderColumnSelector() !!}
-            {!! $grid->renderExportButton() !!}
-            {!! $grid->renderCreateButton() !!}
+    <div class="btn-container pull-right">
+      {!! $grid->renderCreateButton() !!}
+      <?php //echo $grid->renderFilter();?>
+      {!! $grid->renderExportButton() !!}
+    </div>
+    <div class="box">
+        <div class="box-header">
+
+            <div class="pull-right grid-pagination">
+                {!! $grid->paginator() !!}
+            </div>
+
+            <div class="grid-header-tools">
+                {!! $grid->renderHeaderTools() !!}
+            </div>
+
         </div>
-        @if ( $grid->showTools() )
-        <div class="pull-left">
-            {!! $grid->renderHeaderTools() !!}
+        <!-- /.box-header -->
+        <div class="box-body table-responsive no-padding">
+          <?= Form::open(['url'=>$grid->getFormAction(),'method'=>'get','id'=>'grid-form','pjax-container'=>true])?>
+            <table class="table table-hover">
+                <thead>
+                  <tr>
+                      @foreach($grid->columns() as $column)
+                      <th>{{$column->getLabel()}}{!! $column->sorter() !!}</th>
+                      @endforeach
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                      @foreach($grid->columns() as $column)
+                      <td>{!! $column->filtering() !!}</td>
+                      @endforeach
+                  </tr>
+
+
+                  @foreach($grid->rows() as $row)
+                  <tr {!! $row->getRowAttributes() !!}>
+                      @foreach($grid->columnNames as $name)
+                      <td {!! $row->getColumnAttributes($name) !!}>
+                          {!! $row->column($name) !!}
+                      </td>
+                      @endforeach
+                  </tr>
+                  @endforeach
+
+                {!! $grid->renderFooter() !!}
+              </tbody>
+
+            </table>
+            {{Form::close()}}
         </div>
-        @endif
+        <div class="box-footer clearfix">
+            {!! $grid->paginator()->renderPaginationRange() !!}
+        </div>
+        <!-- /.box-body -->
     </div>
-    @endif
-
-    {!! $grid->renderFilter() !!}
-
-    {!! $grid->renderHeader() !!}
-
-    <!-- /.box-header -->
-    <div class="box-body table-responsive no-padding">
-        <table class="table table-hover grid-table" id="{{ $grid->tableID }}">
-            <thead>
-                <tr>
-                    @foreach($grid->visibleColumns() as $column)
-                    <th {!! $column->formatHtmlAttributes() !!}>{!! $column->getLabel() !!}{!! $column->renderHeader() !!}</th>
-                    @endforeach
-                </tr>
-            </thead>
-
-            @if ($grid->hasQuickCreate())
-                {!! $grid->renderQuickCreate() !!}
-            @endif
-
-            <tbody>
-
-                @if($grid->rows()->isEmpty() && $grid->showDefineEmptyPage())
-                    @include('admin::grid.empty-grid')
-                @endif
-
-                @foreach($grid->rows() as $row)
-                <tr {!! $row->getRowAttributes() !!}>
-                    @foreach($grid->visibleColumnNames() as $name)
-                    <td {!! $row->getColumnAttributes($name) !!}>
-                        {!! $row->column($name) !!}
-                    </td>
-                    @endforeach
-                </tr>
-                @endforeach
-            </tbody>
-
-            {!! $grid->renderTotalRow() !!}
-
-        </table>
-
-    </div>
-
-    {!! $grid->renderFooter() !!}
-
-    <div class="box-footer clearfix">
-        {!! $grid->paginator() !!}
-    </div>
-    <!-- /.box-body -->
 </div>
+<!-- <script src="{{ admin_asset ("/vendor/laravel-admin/jquery-ui/jquery-ui.min.js") }}"></script> -->

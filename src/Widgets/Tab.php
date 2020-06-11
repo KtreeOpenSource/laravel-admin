@@ -3,51 +3,51 @@
 namespace Encore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Renderable;
+use Encore\Admin\Admin;
 
 class Tab extends Widget implements Renderable
 {
-    use ContainsForms;
-
-    const TYPE_CONTENT = 1;
-    const TYPE_LINK = 2;
-
     /**
      * @var string
      */
     protected $view = 'admin::widgets.tab';
 
+    protected $align = 'horizontal';
+
+    protected $navType = 'nav nav-tabs';
+
     /**
      * @var array
      */
-    protected $data = [
-        'id'       => '',
-        'title'    => '',
-        'tabs'     => [],
-        'dropDown' => [],
-        'active'   => 0,
-    ];
+    protected $data
+        = [
+            'id' => '',
+            'title' => '',
+            'tabs' => [],
+            'dropDown' => [],
+            'active' => 0,
+        ];
 
     public function __construct()
     {
         $this->class('nav-tabs-custom');
+        $this->setActiveTab();
     }
 
     /**
      * Add a tab and its contents.
      *
-     * @param string            $title
+     * @param string $title
      * @param string|Renderable $content
-     * @param bool              $active
      *
      * @return $this
      */
     public function add($title, $content, $active = false)
     {
         $this->data['tabs'][] = [
-            'id'      => mt_rand(),
-            'title'   => $title,
+            'id' => mt_rand(),
+            'title' => $title,
             'content' => $content,
-            'type'    => static::TYPE_CONTENT,
         ];
 
         if ($active) {
@@ -57,27 +57,11 @@ class Tab extends Widget implements Renderable
         return $this;
     }
 
-    /**
-     * Add a link on tab.
-     *
-     * @param string $title
-     * @param string $href
-     * @param bool   $active
-     *
-     * @return $this
-     */
-    public function addLink($title, $href, $active = false)
+    public function align($type)
     {
-        $this->data['tabs'][] = [
-            'id'      => mt_rand(),
-            'title'   => $title,
-            'href'    => $href,
-            'type'    => static::TYPE_LINK,
-        ];
+        $this->align = $type;
 
-        if ($active) {
-            $this->data['active'] = count($this->data['tabs']) - 1;
-        }
+        $this->navType = ($this->align == 'vertical') ? 'nav nav-pills nav-stacked' : $this->navType;
 
         return $this;
     }
@@ -124,11 +108,32 @@ class Tab extends Widget implements Renderable
      */
     public function render()
     {
-        $data = array_merge(
+        $variables = array_merge(
             $this->data,
-            ['attributes' => $this->formatAttributes()]
+            ['attributes' => $this->formatAttributes(), 'navType' => $this->navType, 'align' => $this->align]
         );
 
-        return view($this->view, $data)->render();
+        return view($this->view, $variables)->render();
+    }
+
+    /**
+     * Set active tabs.
+     *
+     * @return Collection
+     */
+    public function setActiveTab()
+    {
+        $script = <<<SCRIPT
+            $(function() {
+                         $('a[data-toggle="tab"]').on('show.bs.tab', function(e) {
+                              localStorage.setItem('activeTab', $(e.target).attr('index'));
+                          });
+                          var activeTab = localStorage.getItem('activeTab');
+                          if (activeTab) {
+                            $('a[index="' + activeTab + '"]').tab('show');
+                          }
+            });
+SCRIPT;
+        Admin::script($script);
     }
 }

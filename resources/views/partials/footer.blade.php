@@ -1,18 +1,23 @@
-<!-- Main Footer -->
-<footer class="main-footer">
-    <!-- To the right -->
-    <div class="pull-right hidden-xs">
-        @if(config('admin.show_environment'))
-            <strong>Env</strong>&nbsp;&nbsp; {!! config('app.env') !!}
-        @endif
-
-        &nbsp;&nbsp;&nbsp;&nbsp;
-
-        @if(config('admin.show_version'))
-        <strong>Version</strong>&nbsp;&nbsp; {!! \Encore\Admin\Admin::VERSION !!}
-        @endif
-
+<div class="modal fade" id="keyboardShortcutsModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">
+                    {{ trans('core::core.general.available keyboard shortcuts') }}
+                </h4>
+            </div>
+            <div class="modal-body">
+                @yield('shortcuts')
+            </div>
+        </div>
     </div>
-    <!-- Default to the left -->
-    <strong>Powered by <a href="https://github.com/z-song/laravel-admin" target="_blank">laravel-admin</a></strong>
+</div>
+<footer class="main-footer">
+    <div class="pull-right hidden-xs">
+        <b>Version</b> {{ $version }}
+    </div>
+
+    @yield('footer')
+    <strong>Copyright © {{ date('Y')}} <a href="https://gst-bhaswa.com/home.html" target="_blank">GST-BHASWA.</a></strong><span> All rights reserved.</span>
 </footer>

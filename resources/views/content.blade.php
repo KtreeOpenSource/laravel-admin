@@ -1,69 +1,50 @@
-@extends('admin::index', ['header' => strip_tags($header)])
+@extends('admin::layouts.master')
 
 @section('content')
     <section class="content-header">
         <h1>
-            {!! $header ?: trans('admin.title') !!}
-            <small>{!! $description ?: trans('admin.description') !!}</small>
+            {{ $header or trans('admin.title') }}
+            <small>{{ $description or trans('admin.description') }}</small>
         </h1>
 
-        <!-- breadcrumb start -->
-        @if ($breadcrumb)
-        <ol class="breadcrumb" style="margin-right: 30px;">
-            <li><a href="{{ admin_url('/') }}"><i class="fa fa-dashboard"></i> {{__('Home')}}</a></li>
-            @foreach($breadcrumb as $item)
-                @if($loop->last)
-                    <li class="active">
-                        @if (\Illuminate\Support\Arr::has($item, 'icon'))
-                            <i class="fa fa-{{ $item['icon'] }}"></i>
-                        @endif
-                        {{ $item['text'] }}
-                    </li>
-                @else
-                <li>
-                    @if (\Illuminate\Support\Arr::has($item, 'url'))
-                        <a href="{{ admin_url(\Illuminate\Support\Arr::get($item, 'url')) }}">
-                            @if (\Illuminate\Support\Arr::has($item, 'icon'))
-                                <i class="fa fa-{{ $item['icon'] }}"></i>
-                            @endif
-                            {{ $item['text'] }}
-                        </a>
-                    @else
-                        @if (\Illuminate\Support\Arr::has($item, 'icon'))
-                            <i class="fa fa-{{ $item['icon'] }}"></i>
-                        @endif
-                        {{ $item['text'] }}
-                    @endif
-                </li>
-                @endif
-            @endforeach
-        </ol>
-        @elseif(config('admin.enable_default_breadcrumb'))
-        <ol class="breadcrumb" style="margin-right: 30px;">
-            <li><a href="{{ admin_url('/') }}"><i class="fa fa-dashboard"></i> {{__('Home')}}</a></li>
-            @for($i = 2; $i <= count(Request::segments()); $i++)
-                <li>
-                {{ucfirst(Request::segment($i))}}
-                </li>
-            @endfor
-        </ol>
+        @if($extraColumns)
+            <div class="info">
+                <div class="attribute-info">
+                    <ul>
+                        @foreach($extraColumns as $key => $value)
+                            <li>
+                                <label>{{$key}} : </label>
+                                <span>{{$value}}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
         @endif
 
-        <!-- breadcrumb end -->
-
+        <ol class="breadcrumb">
+            <li><a href="{{ route('dashboard.index') }}"><i
+                            class="fa fa-dashboard"></i> {{ trans('core::core.breadcrumb.home') }}</a></li>
+            @if($breadcrumb)
+                @foreach($breadcrumb as $key => $value)
+                    @if($value['route'])
+                        <li class="{{$value['class']}}"><a href="{{ $value['route'] }}">{{$key}}</a></li>
+                    @else
+                        <li class="{{$value['class']}}">{{$key}}</li>
+                    @endif
+                @endforeach
+            @endif
+        </ol>
     </section>
 
     <section class="content">
 
-        @include('admin::partials.alerts')
+        @include('admin::partials.error')
+        @include('admin::partials.success')
         @include('admin::partials.exception')
         @include('admin::partials.toastr')
 
-        @if($_view_)
-            @include($_view_['view'], $_view_['data'])
-        @else
-            {!! $_content_ !!}
-        @endif
+        {!! $content !!}
 
     </section>
 @endsection
