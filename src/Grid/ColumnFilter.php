@@ -48,8 +48,6 @@ class ColumnFilter extends \Encore\Admin\Grid\Filter
             return '';
         }
 
-
-
         $script
             = <<<EOT
 $(document).on("keypress",".table-responsive input.grid-filter",function (event) {
@@ -57,6 +55,9 @@ $(document).on("keypress",".table-responsive input.grid-filter",function (event)
       $(this).closest("form").submit();
     }
 });
+$(document).on("click", ".table-responsive div.input-grid-search-addon", function(){
+      $(this).closest("form").submit();
+})
 $(document).on("change",".table-responsive .date-filter",function (event) {
             var data = {};
             $.each($(this).closest("table").find('.grid-filter').serializeArray(), function () {
@@ -65,9 +66,26 @@ $(document).on("change",".table-responsive .date-filter",function (event) {
                 }
                 data[this.name].push(this.value);
             });
-            console.log(data); return false;
+
   $(this).closest("form").submit();
 });
+
+$(document).on("keyup",".table-responsive .date-filter",function (event) {
+
+  var data = {};
+  $.each($(this).closest("table").find('.grid-filter').serializeArray(), function () {
+      if (!(this.name in data)) {
+          data[this.name] = [];
+      }
+      data[this.name].push(this.value);
+  });
+
+  if (event.keyCode == 13) {
+    $(this).closest("form").submit();
+  }
+
+});
+
 $(document).on("change",".table-responsive select.grid-filter",function (event) {
       $(this).closest("form").submit();
 });

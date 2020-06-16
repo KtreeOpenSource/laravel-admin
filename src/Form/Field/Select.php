@@ -22,8 +22,12 @@ class Select extends Field
         if (empty($this->script)) {
             $this->script = <<<EOF
 $("{$this->getElementClassSelector()}").select2({
-    allowClear: true,
-    placeholder: "{$this->label}"
+    placeholder: "choose",
+    allowClear: true
+});
+$(".select2-selection__rendered").removeAttr('title');
+$(document).on("change","{$this->getElementClassSelector()}", function(){
+  $(".select2-selection__rendered").removeAttr('title');
 });
 EOF;
         }
@@ -102,6 +106,7 @@ $(document).on('change', "{$this->getElementClassSelector()}", function () {
         }).trigger('change');
     });
 });
+
 EOT;
 
         Admin::script($script);

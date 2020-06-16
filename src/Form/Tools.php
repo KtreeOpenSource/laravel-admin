@@ -48,20 +48,23 @@ class Tools implements Renderable
      */
     protected function backButton()
     {
-        $script = <<<'EOT'
+        /*$script = <<<'EOT'
 $('.form-history-back').on('click', function (event) {
     event.preventDefault();
     history.back(1);
 });
-EOT;
+EOT;*/
 
-        Admin::script($script);
+        //Admin::script($script);
+        $slice = Str::contains($this->form->getResource(0), '/edit') ? null : -1;
 
-        $text = trans('admin.back');
+        $resource = $this->form->getResource($slice);
+
+        $text = trans('customer::customers.button.clear');
 
         return <<<EOT
 <div class="btn-group pull-right" style="margin-right: 10px">
-    <a class="btn form-history-back"><i class="fa fa-arrow-left"></i>&nbsp;$text</a>
+    <button type="reset" class="btn btn-warning save btn-custom1 reset"><i class="fa fa-times"></i>&nbsp;$text</button>
 </div>
 EOT;
     }
@@ -80,6 +83,7 @@ EOT;
 EOT;
     }
 
+    
     /**
      * Prepend a tool.
      *

@@ -7,16 +7,20 @@
     @if( ! $form->isMode(\Encore\Admin\Form\Builder::MODE_VIEW)  || ! $form->option('enableSubmit'))
         <input type="hidden" name="_token" value="{{ csrf_token() }}">
     @endif
+
     <div class="btn-container">
-      {!! $form->customButton() !!}
-      {!! $form->submitButton() !!}
-      {!! $form->renderHeaderTools() !!}
+      {!! $form->ktreebackbutton() !!}
     </div>
+
     <div class="box box-info">
         {{--<div class="box-header with-border">--}}
             {{--<h3 class="box-title">General Information</h3>--}}
         {{--</div>--}}
-      <div class="form-box-body">
+
+
+        <div class="col-md-2">&nbsp;</div>
+        <div class="col-md-8 form-design">
+          <div class="form-box-body">
         @if(!$tabObj->isEmpty())
             @include('admin::form.tab', compact('tabObj'))
         @else
@@ -37,10 +41,20 @@
                 @endif
             </div>
         @endif
+        <div class="btn-container">
+          {!! $form->customButton() !!}
+          {!! $form->submitButton() !!}
+          {!! $form->customBackButton() !!}
+          {!! $form->renderHeaderTools() !!}
+        </div>
+        </div>
+        <div class="col-md-2">&nbsp;</div>
       </div>
 
       @foreach($form->getHiddenFields() as $hiddenField)
           {!! $hiddenField->render() !!}
       @endforeach
+
   </div>
+
 {!! $form->close() !!}

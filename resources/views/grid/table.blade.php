@@ -1,21 +1,14 @@
-<div class="admin-grid">
-    @if(session()->has('message.level'))
-      <div class="alert alert-{{ session('message.level') }}">
-      <?php $spanClass = (session('message.level') == 'danger') ? 'glyphicon glyphicon-ban-circle' : 'glyphicon glyphicon-ok';?>
-      <span class="{{$spanClass}}"></span>
-      {!! session('message.content') !!}
-      <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-      </div>
-    @endif
+<div class="admin-grid row">
 
-    <div class="btn-container pull-right">
-      {!! $grid->renderCreateButton() !!}
+    <!-- <div class="btn-container pull-right">
       <?php //echo $grid->renderFilter(); ?>
       {!! $grid->renderExportButton() !!}
-    </div>
+    </div>   -->
     <div class="box">
         <div class="box-header">
-
+          <div class="pull-left">
+            {!! $grid->renderCreateButton() !!}
+          </div>
             <div class="pull-right grid-pagination">
                 {!! $grid->paginator() !!}
             </div>
@@ -26,18 +19,18 @@
 
         </div>
         <!-- /.box-header -->
-        <div class="box-body table-responsive no-padding">
+        <div class="box-body table-responsive no-padding sticky-table">
           <?= Form::open(['url'=>$grid->getFormAction(),'method'=>'get','id'=>'grid-form','pjax-container'=>true])?>
-            <table class="table table-hover">
+            <table class="table table-striped">
                 <thead>
-                  <tr>
+                  <tr class="table-tr">
                       @foreach($grid->columns() as $column)
                       <th>{{$column->getLabel()}}{!! $column->sorter() !!}</th>
                       @endforeach
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
+                  <tr class="filter-row">
                       @foreach($grid->columns() as $column)
                       <td>{!! $column->filtering() !!}</td>
                       @endforeach
@@ -66,4 +59,4 @@
         <!-- /.box-body -->
     </div>
 </div>
-<!-- <script src="{{ admin_asset ("/vendor/laravel-admin/jquery-ui/jquery-ui.min.js") }}"></script> -->
+<script src="{{ admin_asset ('/vendor/laravel-admin/jquery-ui/jquery-ui.min.js') }}"></script>

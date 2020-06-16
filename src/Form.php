@@ -1139,9 +1139,22 @@ class Form
         return $this;
     }
 
-    public function enableCustomSubmit($url, $label = 'Button')
+    public function disableBack()
+    {
+        $this->builder()->options(['disableBack' => true]);
+        return $this;
+    }
+
+    public function enablecustomButton($url, $label = 'Button')
     {
         $this->builder()->options(['disableCustomButton' => true,'label' => $label]);
+        $this->builder()->url = $url;
+        return $this;
+    }
+
+    public function enablecustomBack($url, $label = 'Button')
+    {
+        $this->builder()->options(['disableCustomBack' => true,'label' => $label]);
         $this->builder()->url = $url;
         return $this;
     }
@@ -1287,7 +1300,7 @@ class Form
      * @param array|string $abstract
      */
     public static function forget($abstract)
-    {
+    {          if(!in_array("editor",$abstract))
         array_forget(static::$availableFields, $abstract);
     }
 

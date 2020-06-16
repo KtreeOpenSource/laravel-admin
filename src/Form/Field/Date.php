@@ -1,5 +1,4 @@
 <?php
-
 namespace Encore\Admin\Form\Field;
 
 class Date extends Text
@@ -18,7 +17,6 @@ class Date extends Text
     public function format($format)
     {
         $this->format = $format;
-
         return $this;
     }
 
@@ -27,7 +25,7 @@ class Date extends Text
         if ($value === '') {
             $value = null;
         }
-
+        
         return $value;
     }
 
@@ -36,10 +34,17 @@ class Date extends Text
         $this->options['format'] = $this->format;
         $this->options['locale'] = config('app.locale');
 
-        $this->script = "$('{$this->getElementClassSelector()}').datetimepicker(".json_encode($this->options).');';
+        // $this->script = "$('{$this->getElementClassSelector()}').datetimepicker(".json_encode($this->options).');';
 
         $this->prepend('<i class="fa fa-calendar"></i>')
-            ->defaultAttribute('style', 'width: 110px');
+            ->defaultAttribute('style', '')
+            ->defaultAttribute('type', 'date');
+
+        if($this->value)
+        {
+          $dateFieldValue = date('Y-m-d', strtotime($this->value));
+          $this->defaultAttribute('value', $dateFieldValue);
+        }
 
         return parent::render();
     }

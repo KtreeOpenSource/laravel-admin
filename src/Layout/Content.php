@@ -23,6 +23,20 @@ class Content implements Renderable
     protected $description = '';
 
     /**
+     * Content url.
+     *
+     * @var string
+     */
+    protected $url = '';
+
+    /**
+     * Content label.
+     *
+     * @var string
+     */
+    protected $label= '';
+
+    /**
      * Content extra columns.
      *
      * @var string
@@ -40,6 +54,13 @@ class Content implements Renderable
      * @var array
      */
     protected $breadcrumb = [];
+
+    /**
+     * Content backbutton.
+     *
+     * @var array
+     */
+    protected $customBackButton = false;
 
     /**
      * Content constructor.
@@ -106,6 +127,23 @@ class Content implements Renderable
     public function breadcrumb($breadcrumb = [])
     {
         $this->breadcrumb = $breadcrumb;
+
+        return $this;
+    }
+
+    /**
+     * Set back button of content.
+     *
+     * @param array $enablecustomBack
+     *
+     * @return $this
+     */
+    public function enableContentCustomBack($url,$label)
+    {
+        $this->url = $url;
+        $this->label = $label;
+
+        $this->customBackButton = true;
 
         return $this;
     }
@@ -197,8 +235,11 @@ class Content implements Renderable
     {
         $items = [
             'header'      => $this->header,
+            'url'         =>  $this->url,
+            'label'         =>  $this->label,
             'description' => $this->description,
             'extraColumns' => $this->extraColumns,
+            'customBackButton'=>$this->customBackButton,
             'breadcrumb' => $this->breadcrumb,
             'content'     => $this->build(),
         ];

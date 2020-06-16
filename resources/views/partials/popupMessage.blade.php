@@ -35,7 +35,6 @@
              $("#myDialog").dialog({
                       modal: true,
                       width: 900,
-                      dialogClass: 'custom-dialog-box',
                       buttons: {
                         "Ok": {
                               click: function () {

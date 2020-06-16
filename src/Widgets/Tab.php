@@ -22,6 +22,7 @@ class Tab extends Widget implements Renderable
     protected $data
         = [
             'id' => '',
+            'url' => '',
             'title' => '',
             'tabs' => [],
             'dropDown' => [],
@@ -30,8 +31,8 @@ class Tab extends Widget implements Renderable
 
     public function __construct()
     {
-        $this->class('nav-tabs-custom');
-        $this->setActiveTab();
+        $this->class('register-form nav-tabs-custom inner-nav-tabs ');
+        //$this->setActiveTab();
     }
 
     /**
@@ -42,12 +43,13 @@ class Tab extends Widget implements Renderable
      *
      * @return $this
      */
-    public function add($title, $content, $active = false)
+    public function add($title, $content, $active = false, $id = null, $url=null)
     {
         $this->data['tabs'][] = [
-            'id' => mt_rand(),
+            'id' => ($id) ? $id : mt_rand(),
             'title' => $title,
             'content' => $content,
+            'url'   => $url,
         ];
 
         if ($active) {
@@ -61,7 +63,7 @@ class Tab extends Widget implements Renderable
     {
         $this->align = $type;
 
-        $this->navType = ($this->align == 'vertical') ? 'nav nav-pills nav-stacked' : $this->navType;
+        $this->navType = ($this->align == 'vertical') ? 'nav nav-tabs tab-design breadcrumb1' : $this->navType;
 
         return $this;
     }
@@ -125,7 +127,7 @@ class Tab extends Widget implements Renderable
     {
       $script = <<<SCRIPT
             $(function() {
-                         $('a[data-toggle="tab"]').on('show.bs.tab', function(e) {
+                         $('a[data="tab"]').on('show.bs.tab', function(e) {
                               localStorage.setItem('activeTab', $(e.target).attr('index'));
                           });
                           var activeTab = localStorage.getItem('activeTab');

@@ -206,13 +206,15 @@ class Actions extends AbstractDisplayer
      */
     protected function editAction()
     {
+        $edit = trans('admin.edit');
+
         if ($this->editUrl == null)
         {
             $this->editUrl = $this->getResource().'/'.$this->getKey().'/edit';
         }
 
         return <<<EOT
-<a href="{$this->editUrl}">
+<a href="{$this->editUrl}" title="{$edit}">
     <i class="fa fa-pencil"></i>
 </a>
 EOT;
@@ -225,8 +227,10 @@ EOT;
      */
     protected function viewAction()
     {
+        $view = trans('admin.view');
+
         return <<<EOT
-<a href="{$this->getResource()}/{$this->getKey()}/view">
+<a href="{$this->getResource()}/{$this->getKey()}/view" title="{$view}">
     <i class="fa fa-eye"></i>
 </a>
 EOT;
@@ -244,6 +248,7 @@ EOT;
         $deleteConfirm = trans('admin.delete_confirm');
         $confirm = trans('admin.confirm');
         $cancel = trans('admin.cancel');
+        $delete = trans('admin.delete');
 
         $script = <<<SCRIPT
 
@@ -288,7 +293,7 @@ SCRIPT;
         Admin::script($script);
 
         return <<<EOT
-<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete">
+<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete" title="{$delete}">
     <i class="fa fa-trash"></i>
 </a>
 EOT;
@@ -304,6 +309,7 @@ EOT;
         $deleteConfirm = trans('admin.delete_confirm');
         $confirm = trans('admin.confirm');
         $cancel = trans('admin.cancel');
+        $delete = trans('admin.delete');
 
         $script = <<<SCRIPT
 
@@ -348,7 +354,7 @@ SCRIPT;
         Admin::script($script);
 
         return <<<EOT
-<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete">
+<a href="javascript:void(0);" data-id="{$this->getKey()}" class="grid-row-delete" title="{$delete}">
     <i class="fa fa-trash"></i>
 </a>
 EOT;

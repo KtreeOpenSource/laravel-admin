@@ -173,11 +173,23 @@ class File extends Field
 
         $this->options(['overwriteInitial' => true]);
 
+        if ($this->rules != 'image') {
+            $this->options(['showPreview' => false]);
+        }
+
         $options = json_encode($this->options);
 
         $this->script = <<<EOT
 
 $("input{$this->getElementClassSelector()}").fileinput({$options});
+$(document).on('click','.fileinput-remove', function()
+{
+  $(".file-preview").hide();
+  $(".file-caption-name").html("");
+  $(".file-caption-name").attr("title", "");
+  $("input[type='file']").attr("data-initial-preview", "");
+  $(".fileInputImage").val('1');
+})
 
 EOT;
 

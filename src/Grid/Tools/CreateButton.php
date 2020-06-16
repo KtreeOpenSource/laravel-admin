@@ -27,13 +27,17 @@ class CreateButton extends AbstractTool
             return '';
         }
 
-        $new = trans('admin.new');
+        $new = $this->grid->getCreateButtonTitle();
+
+        $action = $this->grid->getCreateButtonAction();
+
+        $action = ($action) ? $action : $this->grid->resource().'/create';
 
         return <<<EOT
 
 <div class="btn-group pull-right">
-    <a href="{$this->grid->resource()}/create" class="btn btn-sm btn-success">
-        <i class="fa fa-save"></i>&nbsp;&nbsp;{$new}
+    <a href="{$action}" class="btn btn-block btn-success btn-custom">
+        <i class="fa fa-user-plus"></i>&nbsp;&nbsp;{$new}
     </a>
 </div>
 

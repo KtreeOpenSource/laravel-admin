@@ -1,5 +1,12 @@
 @if(isset($columnFilter) && $columnFilter)
-  <input type="text" class="form-control date-filter" id="{{$id}}" placeholder="{{$label}}" name="{{$name}}" value="{{ request($name, $value) }}">
+<?php
+  if(strpos($filterName,".") != false) {
+      $filterValue = request()->input($filterName);
+  } else {
+      $filterValue = request($name, $value);
+  }
+?>
+  <input type="text" class="form-control date-filter" id="{{$id}}" placeholder="{{$label}}" name="{{$name}}" value="{{ $filterValue }}">
 @else
   <div class="input-group">
       <div class="input-group-addon">

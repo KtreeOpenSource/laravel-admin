@@ -64,7 +64,8 @@ class AuthController extends Controller
     public function getLogout()
     {
         /** Store user logout activity  */
-        if (isset(Admin::user()->id) && config('login-activity.track_logout')) {
+        if (isset(Admin::user()->id) && config('login-activity.track_logout'))
+        {
             $logout_activity = new EloquentHandler;
             $logout_activity->createActivity(Admin::user()->id, 'logout');
         }

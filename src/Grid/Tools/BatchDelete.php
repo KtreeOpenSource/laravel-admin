@@ -10,6 +10,7 @@ class BatchDelete extends BatchAction
     public function script()
     {
         $deleteConfirm = trans('admin.delete_confirm');
+        $deleteRecordConfirmation =  trans('admin.delete_record_confirmation');
         $confirm = trans('admin.confirm');
         $cancel = trans('admin.cancel');
 
@@ -18,7 +19,8 @@ class BatchDelete extends BatchAction
 $('{$this->getElementClass()}').on('click', function() {
 
     var id = selectedRows().join();
-
+    if(id)
+    {
     swal({
       title: "$deleteConfirm",
       type: "warning",
@@ -49,6 +51,10 @@ $('{$this->getElementClass()}').on('click', function() {
             }
         });
     });
+  }
+  else{
+  swal("",'$deleteRecordConfirmation', "info");
+  }
 });
 
 EOT;

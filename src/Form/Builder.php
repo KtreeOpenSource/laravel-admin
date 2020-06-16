@@ -1,5 +1,4 @@
 <?php
-
 namespace Encore\Admin\Form;
 
 use Encore\Admin\Admin;
@@ -44,8 +43,10 @@ class Builder
     protected $options
         = [
             'enableSubmit' => true,
+            'disableBack' =>  false,
             'enableReset' => true,
             'disableCustomButton' => false,
+            'disableCustomBack' => false,
             'label'               =>'Button'
         ];
 
@@ -453,17 +454,16 @@ class Builder
             return '';
         }
 
-        $text = trans('admin.submit');
+        $text = trans('customer::customers.button.save');
 
         return <<<EOT
         <div class="btn-group pull-right">
-            <button type="submit" class="pull-right form-submit-btn"
+            <button type="submit" class="btn btn-info save btn-custom1"
             data-loading-text="<i class='fa fa-spinner fa-spin '></i>
              $text">$text</button>
         </div>
 EOT;
     }
-
     /**
      * Custom button of form.
      *
@@ -485,6 +485,30 @@ EOT;
         <div class="btn-group col-md-10">
           <a href="$url"   class="pull-right form-submit-btn" style="width: auto;"
           data-loading-text="<i class='fa fa-spinner fa-spin '></i>$label">$label</a>
+        </div>
+EOT;
+    }
+
+    /**
+     * Custom button of form.
+     *
+     * @return string
+     */
+    public function customBackButton()
+    {
+        if ($this->mode == self::MODE_VIEW) {
+            return '';
+        }
+
+        if (!$this->options['disableCustomBack']) {
+            return '';
+        }
+        $url = $this->url;
+        $label = $this->options['label'];
+
+        return <<<EOT
+        <div class="btn-group pull-right" style="margin-right: 10px">
+        <a href="$url" class="btn form-history-back"><i class="fa fa-arrow-left"></i>&nbsp;$label</a>
         </div>
 EOT;
     }
@@ -586,8 +610,31 @@ SCRIPT;
      */
     public function renderHeaderTools()
     {
-        $this->tools->disableListButton();
-        return $this->tools->render();
+          if ($this->options['disableBack'])
+          {
+              $this->tools->disableListButton();
+              $this->tools->disableBackButton();
+              return $this->tools->render();
+          }
+
+          $this->tools->disableListButton();
+          return $this->tools->render();
+    }
+
+
+    public function ktreebackbutton()
+    {
+      if($this->options['disableBack'])
+      {
+        return;
+      }
+
+      $prev = URL::previous();
+      return <<<EOT
+      <div class="btn-group pull-right">
+                    <a href="$prev" class="btn btn-warning save btn-custom1 reset">
+                    <i class="fa fa-arrow-left"></i> Back</a></div>
+EOT;
     }
 
     /**

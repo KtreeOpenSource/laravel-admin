@@ -5,10 +5,9 @@
     <meta charset="UTF-8">
     <title>
         @section('title')
-            @setting('core::site-name') | Customer Portal
+            @setting('core::site-name') | Admin
         @show
     </title>
-    <link rel="shortcut icon" href="{{url('/images/logo-icon.png')}}"><!-- kt170 for title logo-->
     <meta id="token" name="token" value="{{ csrf_token() }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="user-api-token" content="{{ $currentUser->getFirstApiKey() }}">
@@ -18,32 +17,28 @@
         <link media="all" type="text/css" rel="stylesheet" href="{{ URL::asset($css) }}">
     @endforeach
 
-    {!! Admin::css() !!}
-	<!-- <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/AdminLTE/bootstrap/css/bootstrap.min.css") }}">  -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/font-awesome/css/font-awesome.min.css") }}">
 
-	<link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/AdminLTE/dist/css/skins/" . config('admin.skin') .".min.css") }}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/AdminLTE/dist/css/skins/" . config('admin.skin') .".css") }}">
 
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/jquery-ui/jquery-ui.min.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/laravel-admin/laravel-admin.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/nprogress/nprogress.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/sweetalert/dist/sweetalert.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/nestable/nestable.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/toastr/build/toastr.min.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/bootstrap3-editable/css/bootstrap-editable.css") }}">
-    <link rel="stylesheet" href="{{ asset("/vendor/laravel-admin/google-fonts/fonts.css") }}">
+    {!! Admin::css() !!}
+
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/jquery-ui/jquery-ui.min.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/laravel-admin/laravel-admin.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/nprogress/nprogress.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/sweetalert/dist/sweetalert.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/nestable/nestable.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/toastr/build/toastr.min.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/bootstrap3-editable/css/bootstrap-editable.css") }}">
+    <link rel="stylesheet" href="{{ admin_asset("/vendor/laravel-admin/google-fonts/fonts.css") }}">
+
 
     {!! Theme::script('vendor/jquery/jquery.min.js') !!}
     @include('admin::partials.asgard-globals')
     @include('admin::partials.popupMessage')
     @section('styles')
-    <style type="text/css">
-    label[for="inputError"]
-    {
-        color:red;
-    }
-    </style>
     @show
     @stack('css-stack')
     @stack('translation-stack')
@@ -55,11 +50,6 @@
         var AuthorizationHeaderValue = 'Bearer {{ $currentUser->getFirstApiKey() }}';
     </script>
 
-    <script>
-        function LA() {}
-        LA.token = "{{ csrf_token() }}";
-    </script>
-
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -69,30 +59,18 @@
     @routes
 </head>
 <body class="hold-transition {{config('admin.skin')}} {{join(' ', config('admin.layout'))}}">
-
 <div class="wrapper" id="app">
     <header class="main-header">
       <a href="{{ route('dashboard.index') }}" class="logo">
-              <span class="logo-mini">
-                  @setting('core::site-name-mini')
-                  <img src=<?php echo url('/images/logo-icon.png') ?>  alt="Logo-Icon">
-              </span>
-              <span class="logo-lg">
-                  @setting('core::site-name')
-                  <img src=<?php echo url('/images/logo.png') ?>  alt="Logo">
-              </span>
-          </a>
-    <!--    <a href="{{ route('dashboard.index') }}" class="logo">
-          @if($currentUser->avatar)
-          <img src="https://ktree-test-space-beta.s3.amazonaws.com/{{ $currentUser->avatar }}" class="img-circle" style="max-width: 45px;" alt="User Image">
-          @endif
             <span class="logo-mini">
                 @setting('core::site-name-mini')
+                <img src=<?php echo url('/images/logo-icon.png') ?>  alt="Logo-Icon">
             </span>
             <span class="logo-lg">
                 @setting('core::site-name')
+                <img src=<?php echo url('/images/logo.png') ?>  alt="Logo">
             </span>
-        </a> -->
+        </a>
         @include('admin::partials.top-nav')
     </header>
     @include('admin::partials.sidebar-nav')
@@ -105,7 +83,10 @@
 
         <!-- Main content -->
         <section class="content">
-            @include('admin::partials.notifications')
+            @include('admin::partials.error')
+            @include('admin::partials.success')
+            @include('admin::partials.exception')
+            @include('admin::partials.toastr')
             @yield('content')
             {!! Admin::script() !!}
             <router-view></router-view>
@@ -119,20 +100,27 @@
     <script src="{{ URL::asset($js) }}" type="text/javascript"></script>
 @endforeach
 
-<script src="{{ mix('js/app.js') }}"></script>
+<script>
+    function LA() {}
+    LA.token = "{{ csrf_token() }}";
+</script>
+
+<script src="{{ asset('js/app.js') }}"></script>
 
 <!-- REQUIRED JS SCRIPTS -->
-<script src="{{ admin_asset ("/vendor/laravel-admin/AdminLTE/plugins/slimScroll/jquery.slimscroll.min.js") }}"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/jquery-pjax/jquery.pjax.js") }}"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/nprogress/nprogress.js") }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/AdminLTE/plugins/slimScroll/jquery.slimscroll.min.js') }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/jquery-pjax/jquery.pjax.js') }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/nprogress/nprogress.js') }}"></script>
 
 <!-- REQUIRED JS SCRIPTS -->
-<script src="{{ admin_asset ("/vendor/laravel-admin/nestable/jquery.nestable.js") }}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/bootstrap3-editable/js/bootstrap-editable.min.js") }}"></script>
-<script src="{{ admin_asset ("/vendor/laravel-admin/sweetalert/dist/sweetalert.min.js") }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/nestable/jquery.nestable.js') }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/toastr/build/toastr.min.js') }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/bootstrap3-editable/js/bootstrap-editable.min.js') }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/sweetalert/dist/sweetalert.min.js') }}"></script>
 {!! Admin::js() !!}
-<script src="{{ admin_asset ("/vendor/laravel-admin/laravel-admin/laravel-admin.js") }}"></script>
+<script src="{{ admin_asset ('/vendor/laravel-admin/laravel-admin/laravel-admin.js') }}"></script>
+
+<script src="{{ asset('js/echo.js') }}"></script>
 
 <?php if (is_module_enabled('Notification')): ?>
     <script src="https://js.pusher.com/3.0/pusher.min.js"></script>

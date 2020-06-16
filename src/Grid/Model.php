@@ -369,10 +369,16 @@ class Model
         } else {
             $this->resetOrderBy();
 
-            $this->queries->push([
-                'method'    => 'orderBy',
-                'arguments' => [$this->sort['column'], $this->sort['type']],
-            ]);
+            $tableName = $this->model->getTable();
+
+            if (\Schema::hasColumn($tableName,$this->sort['column'])) {
+                $this->queries->push([
+                    'method'    => 'orderBy',
+                    'arguments' => [$tableName.'.'.$this->sort['column'], $this->sort['type']],
+                ]);
+            } else {
+                return;
+            }
         }
     }
 
@@ -399,13 +405,19 @@ class Model
 
             $this->resetOrderBy();
 
-            $this->queries->push([
-                'method'    => 'orderBy',
-                'arguments' => [
-                    $relation->getRelated()->getTable().'.'.$relationColumn,
-                    $this->sort['type'],
-                ],
-            ]);
+            $tableName = $relation->getRelated()->getTable();
+
+            if (\Schema::hasColumn($tableName,$relationColumn)) {
+                $this->queries->push([
+                    'method'    => 'orderBy',
+                    'arguments' => [
+                        $tableName.'.'.$relationColumn,
+                        $this->sort['type'],
+                    ],
+                ]);
+            } else {
+                return;
+            }
         }
     }
 
@@ -435,11 +447,12 @@ class Model
     protected function joinParameters(Relation $relation)
     {
         $relatedTable = $relation->getRelated()->getTable();
+        $modelTable = $this->model->getTable();
 
         if ($relation instanceof BelongsTo) {
             return [
                 $relatedTable,
-                $relation->getForeignKey(),
+                $modelTable.'.'.$relation->getForeignKey(),
                 '=',
                 $relatedTable.'.'.$relation->getRelated()->getKeyName(),
             ];

@@ -49,8 +49,10 @@ class Select extends Presenter
 
         $script = <<<SCRIPT
 $(".{$this->getElementClass()}").select2({
-  placeholder: "$placeholder"
+  placeholder: "$placeholder",
+  allowClear: true,
 });
+$(".select2-selection__rendered").removeAttr('title');
 
 SCRIPT;
 
@@ -74,6 +76,7 @@ SCRIPT;
 
 $(".{$this->getElementClass()}").select2({
   placeholder: "$placeholder",
+  allowClear: true,
   ajax: {
     url: "$resourceUrl",
     dataType: 'json',
@@ -152,7 +155,7 @@ $(document).on('change', ".{$this->getClass($column)}", function () {
                 text : item.$textField
             }));
         });
-        
+
         $(target).trigger('change');
     });
 });

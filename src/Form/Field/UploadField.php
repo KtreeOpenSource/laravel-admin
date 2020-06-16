@@ -65,6 +65,7 @@ trait UploadField
             'initialPreviewAsData' => true,
             'browseLabel'          => trans('admin.browse'),
             'showRemove'           => false,
+            'showCancel'           => false,
             'showUpload'           => false,
             'initialCaption'       => $this->initialCaption($this->value),
             'deleteExtraData'      => [
@@ -284,6 +285,11 @@ trait UploadField
      */
     public function objectUrl($path)
     {
+        /*if ( preg_match("#images#", $path) === 1) {
+            return \Modules\Core\Helpers\StorageUtility::getImage($path);
+        }*/
+
+
         if (URL::isValidUrl($path)) {
             return $path;
         }
@@ -297,6 +303,7 @@ trait UploadField
         }
 
         return Storage::disk(config('admin.upload.disk'))->url($path);
+
     }
 
     /**

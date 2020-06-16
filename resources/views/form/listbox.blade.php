@@ -3,7 +3,7 @@
     <label for="{{$id}}" class="{{$viewClass['label']}} control-label form-control-label">{{$label}}</label>
 
     @include('admin::form.error')
-    
+
     <div class="{{$viewClass['field']}}">
 
         <select class="form-control {{$class}}" style="width: 100%;" name="{{$name}}[]" multiple="multiple" data-placeholder="{{ $placeholder }}" {!! $attributes !!} >

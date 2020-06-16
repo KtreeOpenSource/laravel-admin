@@ -291,7 +291,7 @@ abstract class AbstractFilter
      */
     public function date()
     {
-        return $this->datetime(['format' => 'YYYY-MM-DD']);
+        return $this->datetime(['format' => 'yy-mm-dd']);
     }
 
     /**
@@ -433,6 +433,7 @@ abstract class AbstractFilter
             'label'     => $this->label,
             'value'     => $this->value,
             'presenter' => $this->presenter(),
+            'filterName' => $this->column,
         ], $this->presenter()->variables());
     }
 
@@ -453,12 +454,13 @@ abstract class AbstractFilter
      */
     public function columnFilterRender(){
         $variables = array_merge([
-          'columnFilter' => true
+          'columnFilter' => true,
         ],$this->variables());
 
         if($this->view == 'admin::filter.where'){
           return view($this->presenter()->view(), $variables);
         }
+
         return view($this->view,$variables);
     }
 

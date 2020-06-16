@@ -21,7 +21,7 @@ class UserController extends Controller
      * @return Content
      */
     public function index()
-    { 
+    {
         return Admin::content(function (Content $content) {
             $content->header('User Details');
             $content->body($this->grid()->render());

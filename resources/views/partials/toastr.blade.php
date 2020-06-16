@@ -7,7 +7,7 @@
     @endphp
     <script>
         $(function () {
-            toastr.{{$type}}('{!!  $message  !!}', null, {!! $options !!});
+            toastr.{{$type}}("{!!  $message  !!}", null, {!! $options !!});
         });
     </script>
 @endif

@@ -178,6 +178,10 @@ class Grid
      */
     protected $footer;
 
+    protected $createButtonTitle;
+
+    protected $createButtonAction;
+
     /**
      * Create a new grid instance.
      *
@@ -191,6 +195,7 @@ class Grid
         $this->columns = new Collection();
         $this->rows = new Collection();
         $this->builder = $builder;
+        $this->createButtonTitle = trans('admin.new');
 
         $this->setupTools();
         $this->setupFilter();
@@ -203,6 +208,40 @@ class Grid
     public function setupTools()
     {
         $this->tools = new Tools($this);
+    }
+
+    /**
+      * To set the create button title
+    */
+    public function setCreateButtonTitle($title)
+    {
+        $this->createButtonTitle = $title;
+        return $this;
+    }
+
+    /**
+      * To get the create button title
+    */
+    public function getCreateButtonTitle()
+    {
+        return $this->createButtonTitle;
+    }
+
+    /**
+      * To set the create button action
+    */
+    public function setCreateButtonAction($action)
+    {
+        $this->createButtonAction = $action;
+        return $this;
+    }
+
+    /**
+      * To get the create button action
+    */
+    public function getCreateButtonAction()
+    {
+        return $this->createButtonAction;
     }
 
     /**
@@ -371,11 +410,15 @@ class Grid
      *
      * @return void
      */
-    public function paginate($perPage = 20)
+    public function paginate($perPage = 20, $relatedEntityPagination = null)
     {
         $this->perPage = $perPage;
 
-        $this->model()->paginate($perPage);
+        if ($relatedEntityPagination) {
+            $this->model()->paginate($perPage, ['*'], $relatedEntityPagination);
+        } else {
+            $this->model()->paginate($perPage);
+        }
     }
 
     /**
